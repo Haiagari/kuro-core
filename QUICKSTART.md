@@ -1,4 +1,4 @@
-# Quickstart — Kuro Core v0.1.0
+# Quickstart — Kuro Core v0.1.1
 
 > Local-first zero-trust security gate and multi-scanner engine for developers.
 
@@ -26,7 +26,13 @@
 
 ## Installation & Build
 
-### 1. Build from source
+### 1. Install from release (recommended)
+```bash
+curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
+# pin: curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
+```
+
+### 2. Build from source
 ```bash
 git clone https://github.com/Haiagari/kuro-core.git
 cd kuro-core
@@ -34,7 +40,7 @@ make build
 ```
 The compiled standalone binary is placed in `bin/kuro`.
 
-### 2. Optional: Install to system PATH
+### 3. Optional: Install to system PATH
 ```bash
 sudo make install
 ```
