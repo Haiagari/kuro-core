@@ -39,7 +39,8 @@ or harmful.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when
+This Code of Conduct applies within all community spaces for **Kuro Core**
+([Haiagari/kuro-core](https://github.com/Haiagari/kuro-core)), and also applies when
 an individual is officially representing the community in public spaces.
 
 ## Enforcement
@@ -47,6 +48,8 @@ an individual is officially representing the community in public spaces.
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the project maintainer at sam@kuro.dev. All complaints will be
 reviewed and investigated promptly and fairly.
+
+For **security vulnerabilities**, do not use this channel — see [SECURITY.md](SECURITY.md).
 
 ## Attribution
 
