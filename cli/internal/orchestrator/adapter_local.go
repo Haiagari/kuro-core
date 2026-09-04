@@ -380,7 +380,7 @@ func (a *LocalAdapter) runCheckov(ctx context.Context, path string) ([]Finding, 
 // ── Container runtime ──────────────────────────────────────
 
 func (a *LocalAdapter) runContainer(ctx context.Context, image string, args []string, volumes map[string]string) ([]byte, error) {
-	cmdArgs := []string{"run", "--rm", "--memory=512m", "--cpus=1.0"}
+	cmdArgs := []string{"run", "--rm", "--network=none", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--memory=512m", "--cpus=1.0"}
 	for host, container := range volumes {
 		cmdArgs = append(cmdArgs, "-v", host+":"+container)
 	}
