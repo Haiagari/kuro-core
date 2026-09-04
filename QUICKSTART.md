@@ -28,8 +28,8 @@
 
 ### 1. Build from source
 ```bash
-git clone https://github.com/Haiagari/kuro.git
-cd kuro
+git clone https://github.com/Haiagari/kuro-core.git
+cd kuro-core
 make build
 ```
 The compiled standalone binary is placed in `bin/kuro`.
@@ -43,7 +43,12 @@ sudo make install
 
 ## Usage
 
-### 1. Scan a local repository
+### 1. Check your environment
+```bash
+./bin/kuro doctor
+```
+
+### 2. Scan a local repository
 ```bash
 # Interactive TUI scan
 ./bin/kuro scan /path/to/your/project
@@ -55,7 +60,7 @@ sudo make install
 ./bin/kuro scan /path/to/your/project --history
 ```
 
-### 2. Interactive Auto-Fix & Secret Extraction
+### 3. Interactive Auto-Fix & Secret Extraction
 ```bash
 # Preview auto-remediation without touching files
 ./bin/kuro fix /path/to/your/project --dry-run
@@ -64,7 +69,7 @@ sudo make install
 ./bin/kuro fix /path/to/your/project --auto
 ```
 
-### 3. Cyber Deception Canary Tokens
+### 4. Cyber Deception Canary Tokens
 ```bash
 # Generate a fake AWS honeypot credential
 ./bin/kuro canary generate --type aws --format env
@@ -73,7 +78,7 @@ sudo make install
 ./bin/kuro canary verify AKIAIOSFODNN7EXAMPLE
 ```
 
-### 4. Run System Diagnostics
+### 5. Run System Diagnostics
 ```bash
 ./bin/kuro doctor
 ```
@@ -86,7 +91,7 @@ Run the lightweight local proxy to block insecure commits automatically:
 
 ```bash
 # Start proxy in background (runs on :8000)
-cd services/git-proxy && go run main.go
+cd services/git-proxy && go run .
 ```
 
 Point your repository remote to the local proxy:
@@ -101,4 +106,4 @@ If secrets or critical vulnerabilities are introduced, the push is immediately r
 
 ## Looking for Enterprise & Multi-Tenant?
 
-If your team needs central web dashboards, PostgreSQL RLS multi-tenancy, AWS Firecracker microVM sandboxing, eBPF kernel monitoring, or distributed NATS JetStream scaling, check out **Kuro Enterprise**.
+If your team needs central web dashboards, PostgreSQL RLS multi-tenancy, AWS Firecracker microVM sandboxing, eBPF kernel monitoring, or distributed NATS JetStream scaling, check out **Kuro Enterprise** (`Haiagari/kuro-enterprise`).

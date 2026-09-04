@@ -65,105 +65,56 @@ func printUsage() {
 
 ╭────────────────────────────────────────────────────────────╮
 │                                                            │
-│                       KURO Pipeline                         │
-│                    CLI v` + Version + `                    │
+│                        KURO CORE                            │
+│              Local-first security gate  ` + Version + `              │
 │                                                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  ┌─ MANAGEMENT ───────────────────────────────────────────┐   │
+│  ┌─ CORE (local, zero server) ─────────────────────────┐   │
 │  │                                                     │   │
-│  │  deploy [--tls] [--ollama]    Deploy Kuro         │   │
-│  │  setup <component>           Configure component │   │
-│  │    setup images               Download images   │   │
-│  │  health [--watch]             Check health       │   │
-│  │  up [--flags]                Manage the stack    │   │
-│  │    --down                    Stop services     │   │
-│  │    --status                  Service status   │   │
-│  │    --minimal                 Postgres + API only   │   │
-│  │    --no-dash                 No dashboard         │   │
-│  │    --no-nats                 No NATS              │   │
-│  │                                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                            │
-│  ┌─ SCAN ────────────────────────────────────────────┐   │
-│  │                                                     │   │
-│  │  scan <target>     Scan code                  │   │
-│  │    Local:  ./path    No server (Docker/Podman)   │   │
-│  │    Remote: <url>     Sends to Kuro server          │   │
-│  │    --remote          Force remote mode             │   │
-│  │    --json            JSON output                    │   │
-│  │  status <scan-id>   View scan result           │   │
-│  │    --json            JSON output                    │   │
+│  │  scan <path> [--json] [--history]                   │   │
+│  │    Scan locally via Docker/Podman scanners          │   │
+│  │  fix [path] [--dry-run|--auto]                      │   │
+│  │    Interactive secret remediation (Bubbletea TUI)   │   │
+│  │  canary generate|inject|verify|list                 │   │
+│  │    Honeypot / canary token deception                │   │
+│  │  attest verify|keygen|inspect                       │   │
+│  │    in-toto / SLSA provenance verification           │   │
+│  │  doctor [--json]                                    │   │
+│  │    Runtime diagnostics (Docker/Podman, tools)       │   │
+│  │  license status|apply <token>                       │   │
+│  │    Show tier / apply enterprise key                 │   │
 │  │                                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                            │
-│  ┌─ CONFIG ─────────────────────────────────────┐   │
+│  ┌─ LOCAL GIT PROXY ───────────────────────────────────┐   │
 │  │                                                     │   │
-│  │  auth <api-key>              Save API key        │   │
-│  │  backup list                 List backups         │   │
-│  │  backup restore <file>    Restore backup       │   │
-│  │  webhook list                List webhooks        │   │
-│  │  webhook add <flags>         Add webhook        │   │
-│  │  webhook delete <id>         Delete webhook       │   │
-│  │  webhook toggle <id>         Enable/disable     │   │
+│  │  Fail-closed pre-push gate on localhost:8000        │   │
+│  │  Run:  cd services/git-proxy && go run .            │   │
+│  │  Then point a remote at http://localhost:8000/...   │   │
 │  │                                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                            │
-│  ┌─ DECEPTION & CANARY ────────────────────────────────┐   │
+│  ┌─ OPTIONAL (server / Enterprise companion) ──────────┐   │
 │  │                                                     │   │
-│  │  canary generate [flags]   Create honeypot key      │   │
-│  │  canary inject <dir>       Inject into fixtures     │   │
-│  │  canary verify <token>     Verify canary signature  │   │
-│  │  canary list               List active canaries     │   │
-│  │                                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                            │
-│  ┌─ ATTESTATION & SLSA ────────────────────────────────┐   │
-│  │                                                     │   │
-│  │  attest verify [flags]     Verify in-toto commit sig│   │
-│  │  attest keygen             Generate Ed25519 keypair │   │
-│  │  attest inspect <file>     Decode in-toto statement │   │
-│  │                                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                            │
-│  ┌─ REMEDIATION & AUTO-FIX ────────────────────────────┐   │
-│  │                                                     │   │
-│  │  fix [path] [--dry-run]    Interactive auto-fix TUI │   │
-│  │  fix --auto                Auto-extract env secrets │   │
-│  │                                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                            │
-│  ┌─ LICENSE & ENTERPRISE ──────────────────────────────┐   │
-│  │                                                     │   │
-│  │  license status            Show active tier & caps  │   │
-│  │  license apply <token>     Install enterprise key   │   │
-│  │                                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                            │
-│  ┌─ DIAGNOSTICS ───────────────────────────────────────┐   │
-│  │                                                     │   │
-│  │  doctor [--json]           System diagnostics       │   │
+│  │  auth · status · backup · webhook · update          │   │
+│  │  deploy · setup · health · up                       │   │
+│  │  scan --remote | scan <url>   (needs API key)       │   │
+│  │  Prefer Kuro Enterprise for multi-tenant stacks     │   │
 │  │                                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                            │
 │  ┌─ OTHER ─────────────────────────────────────────────┐   │
-│  │                                                     │   │
-│  │  update                        Update CLI       │   │
-│  │  version                       Show version      │   │
-│  │  help                          Show this help   │   │
-│  │                                                     │   │
+│  │  version · help                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                            │
 ├────────────────────────────────────────────────────────────┤
-│                                                            │
 │  EXAMPLES:                                                 │
-│    kuro deploy                                              │
-│    kuro deploy --tls --ollama                               │
-│    kuro setup tls --status                                  │
-│    kuro health --watch                                      │
+│    kuro doctor                                             │
 │    kuro scan ./my-project                                  │
-│    kuro scan https://github.com/user/repo.git               │
-│    kuro scan --remote ./my-project                         │
+│    kuro scan ./my-project --json                           │
+│    kuro fix ./my-project --dry-run                         │
+│    kuro canary generate --type aws --format env            │
 │                                                            │
 ╰────────────────────────────────────────────────────────────╯
 `))
