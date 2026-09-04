@@ -225,3 +225,28 @@ func TestBackupInvalidSubcommand(t *testing.T) {
 		t.Errorf("should report unknown command, got: %s", output)
 	}
 }
+
+func TestHelpMentionsProxy(t *testing.T) {
+	out, err := exec.Command(binPath, "help").CombinedOutput()
+	if err != nil {
+		t.Fatalf("help should not error: %v\nOutput: %s", err, out)
+	}
+	output := string(out)
+	if !strings.Contains(output, "proxy") {
+		t.Error("help should mention proxy command")
+	}
+	if strings.Contains(output, "cd services/git-proxy") {
+		t.Error("help should not instruct cd services/git-proxy && go run")
+	}
+}
+
+func TestProxyHelpFlag(t *testing.T) {
+	out, err := exec.Command(binPath, "proxy", "--help").CombinedOutput()
+	if err != nil {
+		t.Fatalf("proxy --help should not error: %v\nOutput: %s", err, out)
+	}
+	output := string(out)
+	if !strings.Contains(output, "addr") {
+		t.Errorf("proxy --help should mention -addr, got: %s", output)
+	}
+}
