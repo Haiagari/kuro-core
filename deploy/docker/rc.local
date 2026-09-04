@@ -1,0 +1,24 @@
+#!/bin/sh
+# SigNoz bootstrap - runs at boot via rc-local.service
+
+# 1. Create clickhouse user
+mkdir -p /etc/sysusers.d
+cat > /etc/sysusers.d/clickhouse.conf << 'CONF'
+g clickhouse 996
+u clickhouse 996 "ClickHouse server" /var/lib/clickhouse /sbin/nologin
+CONF
+systemd-sysusers 2>/dev/null || true
+
+# 2. Fix ClickHouse service (remove RuntimeDirectory)
+cp /etc/foundry/pours/deployment/signoz-telemetrystore-clickhouse-0-0.service /etc/systemd/system/signoz-telemetrystore-clickhouse-0-0.service
+sed -i '/RuntimeDirectory=/d' /etc/systemd/system/signoz-telemetrystore-clickhouse-0-0.service
+
+# 3. Create runtime dir
+mkdir -p /run/clickhouse
+chown clickhouse:clickhouse /run/clickhouse 2>/dev/null || true
+
+# 4. Reload and restart ClickHouse
+systemctl daemon-reload
+systemctl restart signoz-telemetrystore-clickhouse-0-0.service
+
+exit 0

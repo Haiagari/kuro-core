@@ -1,0 +1,12 @@
+[Unit]
+Description=Kuro SigNoz bootstrap (clickhouse user + service fix)
+Before=signoz-telemetrystore-clickhouse-0-0.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/data/bootstrap.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,195 @@
+# Kuro — Curated Semgrep Ruleset
+# =========================================
+# High-confidence rules, minimal false positives.
+# Covers: Python, JavaScript, TypeScript, PHP, Java, Go
+#
+# Usage: semgrep --config=security/semgrep/kuro-rules.yml
+
+rules:
+  # ── SQL Injection ──────────────────────────────────────
+  - id: kuro-sqli-py
+    pattern-either:
+      - pattern: |
+          $CURSOR.execute("..." + $VAR + "...")
+      - pattern: |
+          $CURSOR.execute(f"...{$VAR}...")
+      - pattern: |
+          $CURSOR.execute("..." % $VAR)
+    message: "SQL Injection: string concatenation in SQL query"
+    severity: ERROR
+    languages: [python]
+    paths:
+      exclude:
+        - "tests/*"
+        - "test/*"
+        - "*_test.py"
+
+  - id: kuro-sqli-js
+    pattern-either:
+      - pattern: |
+          $DB.query("..." + $VAR + "...")
+      - pattern: |
+          `...${$VAR}...`
+    message: "SQL Injection: string concatenation in SQL query"
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  - id: kuro-sqli-java
+    pattern: |
+      $STMT.executeQuery("..." + $VAR + "...")
+    message: "SQL Injection: string concatenation in Statement"
+    severity: ERROR
+    languages: [java]
+
+  - id: kuro-sqli-php
+    pattern: |
+      mysqli_query($CONN, "...$VAR...")
+    message: "SQL Injection: interpolated variable in query"
+    severity: ERROR
+    languages: [php]
+
+  # ── Hardcoded Secrets ─────────────────────────────────
+  - id: kuro-hardcoded-password
+    pattern-either:
+      - pattern: '$PASSWORD = "..."'
+      - pattern: '$PASS = "..."'
+      - pattern: '$SECRET = "..."'
+      - pattern: '$API_KEY = "..."'
+      - pattern: '$TOKEN = "..."'
+    message: "Possible hardcoded secret"
+    severity: WARNING
+    languages: [python, javascript, typescript, php, java, go]
+    paths:
+      exclude:
+        - "*.md"
+        - "*.yml"
+        - "*.yaml"
+        - "*.json"
+        - "*.example"
+        - "fixtures/*"
+
+  # ── Command Injection ─────────────────────────────────
+  - id: kuro-command-injection-py
+    patterns:
+      - pattern-either:
+          - pattern: os.system("..." + $VAR + "...")
+          - pattern: subprocess.call("..." + $VAR + "...")
+          - pattern: subprocess.Popen("..." + $VAR + "...")
+      - pattern-not: os.system("..." + '...' + "...")
+    message: "Command Injection: variable in system command"
+    severity: ERROR
+    languages: [python]
+
+  - id: kuro-command-injection-js
+    pattern-either:
+      - pattern: exec("..." + $VAR + "...")
+      - pattern: execSync("..." + $VAR + "...")
+      - pattern: spawn("..." + $VAR + "...")
+    message: "Command Injection: variable in exec/spawn"
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  # ── Path Traversal ────────────────────────────────────
+  - id: kuro-path-traversal-py
+    pattern-either:
+      - pattern: open("..." + $VAR + "...")
+      - pattern: open(f"...{$VAR}...")
+    message: "Path Traversal: variable in file open"
+    severity: WARNING
+    languages: [python]
+    paths:
+      exclude:
+        - "tests/*"
+
+  # ── Dangerous Eval ────────────────────────────────────
+  - id: kuro-eval-py
+    pattern: eval($VAR)
+    message: "Eval with variable: code injection risk"
+    severity: ERROR
+    languages: [python]
+
+  - id: kuro-eval-js
+    pattern: eval($VAR)
+    message: "Eval with variable: code injection risk"
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  # ── Insecure Deserialization ──────────────────────────
+  - id: kuro-pickle-py
+    pattern: pickle.loads($VAR)
+    message: "Insecure deserialization with pickle"
+    severity: ERROR
+    languages: [python]
+
+  # ── Debug Endpoints in Production ────────────────────
+  - id: kuro-debug-endpoint-py
+    pattern: |
+      @app.route('.../debug/...')
+    message: "Debug endpoint in production"
+    severity: WARNING
+    languages: [python]
+
+  - id: kuro-debug-endpoint-js
+    patterns:
+      - pattern: app.get("/debug/...", ...)
+      - pattern: app.post("/debug/...", ...)
+    message: "Debug endpoint in production"
+    severity: WARNING
+    languages: [javascript, typescript]
+
+  # ── NOSQL Injection ───────────────────────────────────
+  - id: kuro-nosql-injection
+    pattern: |
+      $COL.find({ $KEY: $VAR })
+    message: "Possible NoSQL Injection: variable in query"
+    severity: WARNING
+    languages: [javascript, typescript]
+
+  # ── Weak Cryptography ─────────────────────────────────
+  - id: kuro-weak-crypto-md5
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: md5(...)
+    message: "Use of MD5: weak cryptographic algorithm"
+    severity: WARNING
+    languages: [python, javascript, typescript, php, java]
+
+  - id: kuro-weak-crypto-sha1
+    pattern-either:
+      - pattern: hashlib.sha1(...)
+      - pattern: sha1(...)
+    message: "Use of SHA-1: weak cryptographic algorithm"
+    severity: WARNING
+    languages: [python, javascript, typescript, php, java]
+
+  # ── Hardcoded JWT Secret ──────────────────────────────
+  - id: kuro-hardcoded-jwt
+    pattern-either:
+      - pattern: 'jwt.encode(..., "...", ...)'
+      - pattern: 'JWT_SECRET = "..."'
+      - pattern: 'jwt_secret: "..."'
+    message: "JWT secret hardcoded in code"
+    severity: ERROR
+    languages: [python, javascript, typescript, php, java, go]
+    paths:
+      exclude:
+        - "*.md"
+        - "*.yml"
+        - "*.yaml"
+        - "*.example"
+
+  # ── Insecure HTTP ─────────────────────────────────────
+  - id: kuro-insecure-http
+    pattern-either:
+      - pattern: requests.get("http://...", ...)
+      - pattern: fetch("http://...", ...)
+      - pattern: axios.get("http://...", ...)
+      - pattern: curl_init("http://...")
+    message: "HTTP without TLS: interception risk"
+    severity: WARNING
+    languages: [python, javascript, typescript, php]
+    paths:
+      exclude:
+        - "tests/*"
+        - "test/*"
+        - "localhost*"

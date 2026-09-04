@@ -1,0 +1,191 @@
+# ── Secrets y credenciales ────────────────────────────────────────────────
+# NUNCA commitees estos archivos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.token
+*.cred
+*.secret
+*credentials*
+id_*
+.setup-env
+.admin-key
+.api-pid
+.worker-pid
+.notifier-pid
+.api-8081-pid
+.nomad-token
+.playwright-mcp/
+
+# ── Binarios compilados ───────────────────────────────────────────────────
+bin/
+git-proxy/kuro-proxy
+git-proxy/git-proxy
+notifications/notifications
+
+# ── Config de auth (nunca) ────────────────────────────────────────────────
+.docker/config.json
+.kube/
+kubeconfig
+service-account*.json
+.netrc
+.npmrc
+
+# ── Documentación interna (NO pública) ───────────────────────────────────
+# Planes de negocio, pricing, estrategia de ingresos
+ingreso/
+
+# ── TLS Certificates (security hardening) ────────────────────────────────
+certs/
+
+# ── Test secrets ─────────────────────────────────────────────────────────
+tests/.env
+
+# ── Binarios compilados ──────────────────────────────────────────────────
+bin/
+api/api
+worker/worker
+worker/kuro-worker
+notifications/notifications
+cli/kuro
+git-proxy/kuro-proxy
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ── Datos generados ──────────────────────────────────────────────────────
+data/
+*.db
+*.sqlite3
+.ollama/
+/opt/kuro/scans/
+/opt/nomad/backups/
+/opt/nomad/volumes/
+
+# ── Reportes y outputs de auditoría ──────────────────────────────────────
+/opt/kuro/scans/security-audit/
+
+# ── Build artifacts ──────────────────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+coverage.txt
+coverage.html
+*.test
+*.out
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# ── Sistema / Runtime ────────────────────────────────────────────────────
+.atl/
+.pi/
+.opencode/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+node_modules/
+package-lock.json
+# Pero sí trackeamos package-lock.json en testdata (son fixtures de scanner)
+!worker/scanners/testdata/*/package-lock.json
+yarn.lock
+pnpm-lock.yaml
+*.log
+*.log.*
+logs/
+tmp/
+temp/
+.tmp/
+
+# ── Next.js / Frontend Build ─────────────────────────────────────────────
+.next/
+out/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Git específico ───────────────────────────────────────────────────────
+.git/
+.cocoindex_code/
+
+# ── Backups locales ──────────────────────────────────────────────────────
+backup-*.sql
+backup-*.tar.gz
+*.backup
+*.bkp
+*.old
+
+# ── Temporales ───────────────────────────────────────────────────────────
+*.bak
+*.pid
+*.tmp
+.DS_Store
+Thumbs.db
+# CocoIndex Code (ccc)
+/.cocoindex_code/
+
+# ── SigNoz runtime ──────────────────────────────────────────────────────
+# user_scripts contiene binarios descargados por el init container
+signoz/clickhouse/user_scripts/
+
+# ── Docker / Containers ─────────────────────────────────────────────────
+.docker/
+docker-compose.override.yml
+
+# ── Terraform state (puede contener secrets) ─────────────────────────────
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# ── OS / Platform ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ── Test outputs ─────────────────────────────────────────────────────────
+test-results/
+coverage/
+.coverage
+
+# Artifacts de sesión (no docs públicos)
+SUMMARY.md
+Observacion-analisar.md
+
+# ── Personal / Agent config (no subir) ─────────────────────────────────────
+.agents/
+skills-lock.json
+.kuro/
+
+# ── Scratch / Drafts ──────────────────────────────────────────────────────
+scratch/
+
+# ── Dashboard build output ────────────────────────────────────────────────
+dashboard/public/
+
+# Sync Protocol artifacts
+.sync/
+inventory.json
+results.json
+services/backup-dedup/backup-dedup
+
+# Coverage reports
+/reports/

@@ -1,0 +1,26 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+    "StartLine": 42,
+    "EndLine": 42,
+    "File": "src/config.go",
+    "Secret": "sk-proj-abc123def456"
+  },
+  {
+    "RuleID": "aws-secret-key",
+    "Description": "A potential AWS secret key was found in environment config",
+    "StartLine": 3,
+    "EndLine": 3,
+    "File": ".env.example",
+    "Secret": "AKIA1234567890ABCDEF"
+  },
+  {
+    "RuleID": "private-key",
+    "Description": "A private ssh key was exposed in the repository",
+    "StartLine": 1,
+    "EndLine": 1,
+    "File": "deploy/keys/id_rsa.pub",
+    "Secret": "-----BEGIN RSA PRIVATE KEY-----"
+  }
+]

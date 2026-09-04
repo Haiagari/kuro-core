@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "src/script.py",
+      "start": { "line": 10 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "Detected use of eval() which can lead to code injection",
+        "lines": "eval(user_input)"
+      }
+    },
+    {
+      "check_id": "javascript.browser.security.dom-based-xss",
+      "path": "src/app.js",
+      "start": { "line": 55 },
+      "extra": {
+        "severity": "WARNING",
+        "message": "User input directly assigned to innerHTML",
+        "lines": "element.innerHTML = userInput"
+      }
+    },
+    {
+      "check_id": "generic.performance.unnecessary-list-comprehension",
+      "path": "src/utils.py",
+      "start": { "line": 28 },
+      "extra": {
+        "severity": "INFO",
+        "message": "List comprehension creates unnecessary temporary list",
+        "lines": "result = [x for x in items]"
+      }
+    }
+  ]
+}

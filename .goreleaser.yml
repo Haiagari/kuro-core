@@ -1,0 +1,76 @@
+# Goreleaser configuration for Kuro CLI.
+# Triggered by git tag v* via .github/workflows/release.yml
+# Docs: https://goreleaser.com
+
+version: 2
+
+project_name: kuro
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: kuro-cli
+    main: .
+    dir: cli
+    binary: kuro
+    ldflags:
+      - -w -s -X main.Version={{ .Version }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: kuro-binaries
+    builds:
+      - kuro-cli
+    name_template: "kuro_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    files:
+      - none*
+    strip_binary_directory: true
+
+checksum:
+  name_template: "kuro_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: Haiagari
+    name: kuro
+  header: |
+    ## Kuro {{ .Version }}
+
+    ### Installation
+
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/Haiagari/kuro/main/scripts/install.sh | sh
+    ```
+
+    ### Checksums
+
+    ```
+    {{ range .Artifacts }}{{ .Name }} — SHA-256: {{ .Checksum }}
+    {{ end }}```
+  footer: |
+    See [CHANGELOG.md](https://github.com/sambleed/kuro-pipeline/blob/main/CHANGELOG.md) for full release notes.

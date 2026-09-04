@@ -1,0 +1,19 @@
+{
+  "runtimes": {
+    "runsc": {
+      "path": "/usr/bin/runsc",
+      "runtimeArgs": [
+        "--network=none",
+        "--debug=false"
+      ]
+    }
+  },
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "no-new-privileges": true,
+  "live-restore": true,
+  "userland-proxy": false
+}
