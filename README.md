@@ -1,222 +1,180 @@
 <div align="center">
 
-# KURO CORE
+# Kuro Core
 
-**Local-First Zero-Trust Security Gate & Multi-Scanner CLI**  
-*Intercepts and validates every `git push` with multi-scanner SAST/SCA/Secrets, interactive terminal remediation, and honeypot canary deception — 100% self-contained on your machine with zero server dependencies.*
+**Local-first, single-binary AppSec gate**  
+Intercepts and validates every `git push` with multi-scanner SAST / SCA / Secrets, interactive remediation, and honeypot canaries — 100% self-contained on your machine. No Postgres, NATS, or MinIO required.
 
 [![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL--3.0--only-blue?style=flat-square)](LICENSE)
 [![Version](https://img.shields.io/badge/Release-v0.1.1-emerald?style=flat-square)](https://github.com/Haiagari/kuro-core/releases)
 
-<br/>
-
 ```bash
-# Build and run Kuro Core CLI in seconds
-git clone https://github.com/Haiagari/kuro-core.git && cd kuro-core
-make build
-./bin/kuro doctor
-./bin/kuro scan ./my-project
+curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
+# pin: ... | sh -s -- v0.1.1
+kuro doctor && kuro scan ./my-project
 ```
 
 </div>
 
 ---
 
-## Table of Contents
+## Audience
 
-- [Overview](#overview)
-- [Architecture & How It Works](#architecture--how-it-works)
-- [Core Features](#core-features)
-  - [1. Multi-Scanner Parallel Engine](#1-multi-scanner-parallel-engine)
-  - [2. Pre-Push Interception Proxy](#2-pre-push-interception-proxy)
-  - [3. Interactive Terminal Auto-Remediation](#3-interactive-terminal-auto-remediation)
-  - [4. Cyber Deception & Canary Tokens](#4-cyber-deception--canary-tokens)
-- [CLI Command Reference](#cli-command-reference)
-- [Building & Installing](#building--installing)
-- [Documentation](#documentation)
+| You are… | Start here |
+|---|---|
+| Developer who wants local pre-push security | [QUICKSTART.md](QUICKSTART.md) |
+| Contributor / AI agent working in this repo | [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Security / architecture reviewer | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/SCANNER-ARCHITECTURE.md](docs/SCANNER-ARCHITECTURE.md) |
 
 ---
 
-## Overview
+## Core vs Enterprise
 
-**Kuro Core** is an open-source, local-first AppSec gatekeeper designed for individual developers and teams who want military-grade code security without sending code to the cloud or setting up complex infrastructure.
+| | **Kuro Core** (`Haiagari/kuro-core`) | **Kuro Enterprise** (`Haiagari/kuro-enterprise`) |
+|---|---|---|
+| Runtime | Single binary + Docker/Podman | Server stack (API, workers, dashboards) |
+| Datastores | None | Postgres, NATS, MinIO, … |
+| Happy path | `doctor` → `scan` → `fix` / `canary` → `proxy` | Central policy, multi-tenant API |
+| Proxy scan mode | `SCAN_MODE=local` (default) | `SCAN_MODE=api` |
 
-Running directly on your workstation via Docker or Podman, it coordinates 4 industry-standard security scanners, prevents leaks before they leave your computer, and gives you actionable remediation right inside your terminal.
-
-For multi-tenant dashboards, NATS, and Firecracker sandboxes, see **Kuro Enterprise** (`Haiagari/kuro-enterprise`) — not required for Core.
-
----
-
-## Architecture & How It Works
-
-```mermaid
-flowchart TB
-    subgraph Client["Developer Workstation"]
-        Dev["Developer Shell / IDE"]
-        GitClient["Git Client (git push)"]
-        CLICmd["kuro scan / kuro fix / kuro canary"]
-    end
-
-    subgraph Boundary["Transport Interception Boundary"]
-        GitProxy["Local Git Proxy (:8000)\nkuro proxy (Fail-Closed)"]
-    end
-
-    subgraph CoreEngine["Kuro Core Engine (cli/internal/orchestrator)"]
-        direction TB
-        subgraph Pipeline["6-Phase Deterministic Pipeline"]
-            P1["1. Fetch\n(Workspace Validation)"]
-            P2["2. Scope\n(Manifest & Target Filter)"]
-            P3["3. Scan\n(Parallel Executor)"]
-            P4["4. Analyze\n(Parser & Aggregator)"]
-            P5["5. Decide\n(Policy Gate Evaluation)"]
-            P6["6. Report\n(Formatter & TUI)"]
-            P1 --> P2 --> P3 --> P4 --> P5 --> P6
-        end
-
-        subgraph Analysis["Local Analysis & Remediation"]
-            Dedup["Deduplication Engine\n(SHA-256 Fingerprint + Jaccard Similarity)"]
-            PolicyGate["Policy Engine\n(deploy/policies/default-policy.json)"]
-            AutoFix["Remediation Engine\n(Secret Replacement & .env.example)"]
-        end
-    end
-
-    subgraph Sandbox["Container Execution Sandbox (--network none)"]
-        direction LR
-        subgraph Scanners["Isolated Scanner Containers (Read-Only Mount)"]
-            S_Gitleaks["Gitleaks\n(Secrets Detection)"]
-            S_Semgrep["Semgrep\n(SAST Engine)"]
-            S_Trivy["Trivy\n(SCA & Dependency CVEs)"]
-            S_Checkov["Checkov\n(IaC / Dockerfile / Terraform)"]
-        end
-        Runtime["Docker / Podman Daemon\n(Dropped Capabilities, Memory Limits)"]
-    end
-
-    subgraph Output["Decision & Upstream"]
-        TUI["Bubbletea Interactive TUI / JSON / SARIF"]
-        RemoteGit["Remote Git Forge\n(GitHub / GitLab / Bitbucket)"]
-        AbortPush["Push Blocked (HTTP 403 + Stderr Report)"]
-    end
-
-    %% Flow connections
-    GitClient -->|"Smart HTTP/TCP Forward"| GitProxy
-    GitProxy -->|"Invoke Pre-Push Scan"| P1
-    Dev --> CLICmd
-    CLICmd --> P1
-
-    P3 -->|"Spawn Ephemeral Containers"| Runtime
-    Runtime --> Scanners
-    Scanners -->|"Raw Output JSON"| P4
-
-    P4 --> Dedup
-    Dedup --> P5
-    P5 --> PolicyGate
-    PolicyGate -->|"Violations Found"| AutoFix
-    AutoFix -.->|"Interactive Fix"| Dev
-
-    P6 --> TUI
-    PolicyGate -->|"Pass (Zero Violations)"| GitProxy
-    PolicyGate -->|"Block (Policy Breach)"| AbortPush
-    GitProxy -->|"Forward Push"| RemoteGit
-```
+This repository is **Core only**. Server HTTP APIs and multi-tenant dashboards are out of scope here; see Enterprise when you need them.
 
 ---
 
-## Core Features
+## Features
 
-### 1. Multi-Scanner Parallel Engine
-Kuro Core coordinates multiple containerized scanners running in parallel with `--network none` and read-only mounts:
-- **Gitleaks**: High-speed detection of API keys, tokens, and credentials.
-- **Semgrep**: AST-based static application security testing (SAST).
-- **Trivy**: Software Composition Analysis (SCA) for vulnerable open-source dependencies.
-- **Checkov**: Infrastructure as Code (IaC) misconfiguration audits for Dockerfiles and Terraform.
-
-### 2. Pre-Push Interception Proxy
-A lightweight HTTP/TCP proxy that runs on `localhost:8000` via **`kuro proxy`** (same binary as the CLI). By configuring your git remote to point to the proxy, any `git push` is inspected before forwarding to GitHub/GitLab. If hardcoded secrets or critical vulnerabilities exist, the push is aborted with an error message in stderr. Docker/standalone images still build from `services/git-proxy`.
-
-### 3. Interactive Terminal Auto-Remediation
-Run `kuro fix` to inspect detected secrets interactively:
-- Automatically replaces hardcoded secrets with `os.Getenv(...)`, `process.env[...]`, or configuration references.
-- Generates `.env.example` templates safely.
-- Supports dry-run previews (`--dry-run`) or fully unattended batch execution (`--auto`).
-
-### 4. Cyber Deception & Canary Tokens
-Plant decoy credentials in test fixtures to detect unauthorized intrusion or insider threats:
-```bash
-# Generate a fake AWS credential honeypot
-kuro canary generate --type aws --format env
-
-# Verify if a leaked token was generated by Kuro
-kuro canary verify AKIAIOSFODNN7EXAMPLE
-```
+- **Multi-scanner fleet** — Gitleaks, Semgrep (embedded offline ruleset), Trivy, Checkov in hardened containers (`--network=none`, `--cap-drop=ALL`, `no-new-privileges`).
+- **Fail-closed Git proxy** — `kuro proxy` on `:8000` blocks leaking pushes before they reach GitHub/GitLab.
+- **Interactive remediation** — `kuro fix` extracts hardcoded secrets to env vars (`--dry-run`, `--auto`).
+- **Canary deception** — `kuro canary generate|inject|verify|list` for honeypot credentials.
+- **Attestation** — `kuro attest verify|keygen|inspect` for in-toto / SLSA-style Ed25519 envelopes.
+- **Deterministic exit codes** — pass=`0`, review=`2`, block/error=`1` (flags work after the path: `kuro scan PATH --json`).
 
 ---
 
-## CLI Command Reference
+## Install
 
-Core happy path (local, zero server):
+### Release installer (recommended)
 
-```bash
-# Diagnostics
-kuro doctor
-
-# Scan a project directory
-kuro scan ./my-project
-kuro scan ./my-project --json
-kuro scan ./my-project --history
-
-# Fail-closed local Git proxy (pre-push gate)
-kuro proxy
-kuro proxy --addr :8000 --upstream https://github.com
-
-# Interactive threat remediation & secret extraction
-kuro fix ./my-project --dry-run
-kuro fix ./my-project --auto
-
-# Canary token management
-kuro canary generate --type aws
-kuro canary verify <token>
-
-# Attestation (in-toto / SLSA)
-kuro attest verify
-kuro attest keygen
-
-# License / edition
-kuro license status
-```
-
-Optional server / Enterprise-companion commands (`auth`, `deploy`, `setup`, `health`, `up`, `backup`, `webhook`, `scan --remote`) talk to a Kuro server stack. Prefer **Kuro Enterprise** for that path; Core’s default is fully local.
-
----
-
-## Building & Installing
-
-### Install from release (recommended)
 ```bash
 curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
-# pin: curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
+
+# Pin a release:
+curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
 ```
 
-### Compile binary
+### Build from source
+
 ```bash
-make build
-# Binary output: bin/kuro
+git clone https://github.com/Haiagari/kuro-core.git
+cd kuro-core
+make build          # → bin/kuro
+sudo make install   # → /usr/local/bin/kuro
 ```
 
-### Run tests
-```bash
-make test
-```
-
-### Install globally
-```bash
-sudo make install
-```
+**Prerequisites:** Docker 24+ or Podman 4+ for local scanners. Go 1.26+ only if building from source.
 
 ---
 
-## Documentation
+## Quick usage (happy path)
 
-- [Quickstart Guide](QUICKSTART.md) — Step-by-step tutorial for local workstation usage.
-- [Scanner Architecture](docs/SCANNER-ARCHITECTURE.md) — Multi-scanner engine and container sandbox specifications.
-- [Attestation Reference](docs/ATTESTATION.md) — Cryptographic in-toto and SLSA provenance verification.
+```bash
+kuro doctor                         # runtime + scanner image checks
+kuro scan ./my-project              # interactive TUI on a TTY
+kuro scan ./my-project --json       # machine-readable; flags OK after path
+kuro fix ./my-project --dry-run     # preview secret remediation
+kuro canary generate --type aws --format env
+./bin/kuro proxy                    # fail-closed pre-push gate (:8000)
+```
+
+Expected scan exit codes:
+
+| Decision | Exit code |
+|---|---|
+| pass | `0` |
+| review | `2` |
+| block / error | `1` |
+
+Optional Core-local E2E (no Postgres/NATS/API):
+
+```bash
+make e2e-core
+# equivalent: bash tests/e2e-core-local.sh
+```
+
+`tests/e2e-proxy.sh` is the **Enterprise/API** proxy path — not the Core default.
+
+---
+
+## Architecture (summary)
+
+```
+Developer ──► kuro scan / fix / canary
+                 │
+                 ▼
+        6-phase orchestrator (fetch → scope → scan → analyze → decide → report)
+                 │
+                 ▼
+   Hardened Docker/Podman containers (Gitleaks · Semgrep · Trivy · Checkov)
+
+git push ──► kuro proxy (:8000, SCAN_MODE=local) ──► kuro scan --json ──► forge
+```
+
+Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · scanners: [docs/SCANNER-ARCHITECTURE.md](docs/SCANNER-ARCHITECTURE.md).
+
+---
+
+## CLI reference (Core)
+
+```bash
+kuro doctor [--json]
+kuro scan <path> [--json] [--history] [--tui]   # --remote needs Enterprise API key
+kuro fix [path] [--dry-run|--auto]
+kuro canary generate|inject|verify|list
+kuro attest verify|keygen|inspect
+kuro proxy [--addr :8000] [--upstream https://github.com]
+kuro license status|apply <token>
+kuro version | kuro help
+```
+
+Optional companion commands (`auth`, `deploy`, `setup`, `health`, `up`, `backup`, `webhook`, `scan --remote`) talk to a Kuro **server** stack. Prefer [Haiagari/kuro-enterprise](https://github.com/Haiagari/kuro-enterprise) for that path.
+
+### Local Git proxy
+
+```bash
+export PATH="$PWD/bin:$PATH"   # or: export KURO_BIN=$PWD/bin/kuro
+./bin/kuro proxy
+# or: make proxy
+
+git remote add proxy http://localhost:8000/<owner>/<repo>.git
+git push proxy main
+```
+
+- Default `SCAN_MODE=local` shells out to `kuro scan --json`.
+- Set `SCAN_MODE=api` (aliases: `remote`, `enterprise`) plus `KURO_URL` / `KURO_API_KEY` for Enterprise API mode.
+- `services/git-proxy` remains for Docker/standalone images; day-to-day prefer `./bin/kuro proxy`.
+
+---
+
+## Documentation index
+
+| Doc | Purpose |
+|---|---|
+| [QUICKSTART.md](QUICKSTART.md) | Full tutorial: install → doctor → scan → fix → canary → proxy → e2e |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | CLI, orchestrator phases, proxy, containers |
+| [docs/SCANNER-ARCHITECTURE.md](docs/SCANNER-ARCHITECTURE.md) | Images, hardening, Semgrep embedded rules, offline constraints |
+| [docs/API.md](docs/API.md) | CLI / JSON contract, exit codes; Enterprise HTTP marked out-of-scope |
+| [docs/ATTESTATION.md](docs/ATTESTATION.md) | `kuro attest` guide |
+| [AGENTS.md](AGENTS.md) | Context for AI coding agents |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup, tests, PR conventions |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+| [scripts/README.md](scripts/README.md) | Helper scripts |
+| [tests/README.md](tests/README.md) | Unit, Core E2E, proxy E2E, hardening |
+
+---
+
+## License
+
+[AGPL-3.0-only](LICENSE) — see also [NOTICE](NOTICE).
