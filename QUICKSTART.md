@@ -87,11 +87,19 @@ sudo make install
 
 ## Pre-Push Protection with Local Git Proxy
 
-Run the lightweight local proxy to block insecure commits automatically:
+Run the lightweight local proxy to block insecure commits automatically.
+
+By default the proxy uses **`SCAN_MODE=local`**: it shells out to `kuro scan --json`, so the `kuro` binary must be on `PATH` (or set `KURO_BIN` to its path). For the Enterprise API path instead, set `SCAN_MODE=api` (also accepts `remote` / `enterprise`) and point `KURO_URL` / `KURO_API_KEY` at your API.
 
 ```bash
-# Start proxy in background (runs on :8000)
+# Ensure kuro is available (SCAN_MODE=local default)
+export PATH="$PWD/bin:$PATH"   # or: export KURO_BIN=$PWD/bin/kuro
+
+# Start proxy (runs on :8000)
 cd services/git-proxy && go run .
+
+# Enterprise API mode (optional)
+# SCAN_MODE=api KURO_URL=http://api:8080 KURO_API_KEY=... go run .
 ```
 
 Point your repository remote to the local proxy:
@@ -100,7 +108,7 @@ git remote add proxy http://localhost:8000/my-org/my-project.git
 git push proxy main
 ```
 
-If secrets or critical vulnerabilities are introduced, the push is immediately rejected at the TCP layer.
+If secrets or critical vulnerabilities are introduced, the push is immediately rejected at the TCP layer. Run `kuro doctor` if the proxy cannot find scanners or the CLI.
 
 ---
 

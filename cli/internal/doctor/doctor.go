@@ -54,10 +54,10 @@ type CheckResult struct {
 
 // Check defines a single diagnostic check.
 type Check struct {
-	Name     string
-	Priority string
-	DependsOn string       // name of the check this depends on (empty if none)
-	Run      func() CheckResult
+	Name      string
+	Priority  string
+	DependsOn string // name of the check this depends on (empty if none)
+	Run       func() CheckResult
 }
 
 // DoctorOutput is the JSON serialization structure.
@@ -87,7 +87,6 @@ func RunDoctor(args []string) {
 	os.Exit(exitCode)
 }
 
-// overallFromCode returns the overall status string from exit code.
 func overallFromCode(code int) string {
 	if code == 0 {
 		return OverallPass
@@ -95,7 +94,6 @@ func overallFromCode(code int) string {
 	return OverallDegraded
 }
 
-// runChecks executes all checks sequentially with dependency resolution.
 func runChecks() ([]CheckResult, int) {
 	checks := allChecks()
 	priorityMap := buildPriorityMap(checks)
@@ -103,7 +101,6 @@ func runChecks() ([]CheckResult, int) {
 	resultMap := make(map[string]CheckResult)
 
 	for _, c := range checks {
-		// Check dependency
 		if c.DependsOn != "" {
 			if dep, ok := resultMap[c.DependsOn]; ok && dep.Status == StatusFail {
 				results = append(results, CheckResult{
@@ -125,21 +122,17 @@ func runChecks() ([]CheckResult, int) {
 	return results, code
 }
 
-// allChecks returns the list of all diagnostic checks in order.
+// allChecks returns Core local-first diagnostics (no Postgres/NATS/MinIO).
 func allChecks() []Check {
 	return []Check{
-		{Name: "PostgreSQL", Priority: PriorityCritical, DependsOn: "", Run: CheckPostgres},
-		{Name: "NATS JetStream", Priority: PriorityCritical, DependsOn: "", Run: CheckNATS},
-		{Name: "MinIO Storage", Priority: PriorityCritical, DependsOn: "", Run: CheckMinIO},
-		{Name: "Docker Proxy", Priority: PriorityCritical, DependsOn: "", Run: CheckDockerProxy},
-		{Name: "Scanner Images", Priority: PriorityWarning, DependsOn: "Docker Proxy", Run: CheckScannerImages},
-		{Name: "Component Versions", Priority: PriorityWarning, DependsOn: "", Run: CheckVersions},
-		{Name: "Disk Space", Priority: PriorityWarning, DependsOn: "Docker Proxy", Run: CheckDiskSpace},
-		{Name: "Backup Status", Priority: PriorityInfo, DependsOn: "MinIO Storage", Run: CheckBackupStatus},
+		{Name: "Container Runtime", Priority: PriorityCritical, DependsOn: "", Run: CheckContainerRuntime},
+		{Name: "Git", Priority: PriorityCritical, DependsOn: "", Run: CheckGit},
+		{Name: "Scanner Images", Priority: PriorityWarning, DependsOn: "Container Runtime", Run: CheckScannerImages},
+		{Name: "Disk Space", Priority: PriorityWarning, DependsOn: "", Run: CheckDiskSpace},
+		{Name: "Kuro Binary", Priority: PriorityInfo, DependsOn: "", Run: CheckKuroBinary},
 	}
 }
 
-// buildPriorityMap creates a name→priority lookup from a check list.
 func buildPriorityMap(checks []Check) map[string]string {
 	m := make(map[string]string, len(checks))
 	for _, c := range checks {
@@ -148,9 +141,6 @@ func buildPriorityMap(checks []Check) map[string]string {
 	return m
 }
 
-// aggregate computes overall status and exit code from results.
-// Any CRITICAL check with FAIL status → exit 1.
-// WARNING and INFO failures never affect exit code.
 func aggregate(results []CheckResult, priorityMap map[string]string) (string, int) {
 	for _, r := range results {
 		if r.Status == StatusFail {
@@ -162,8 +152,6 @@ func aggregate(results []CheckResult, priorityMap map[string]string) (string, in
 	return OverallPass, 0
 }
 
-// resolveDependency checks if a dependent check should be skipped.
-// Returns a skip CheckResult if the dependency failed, nil to proceed.
 func resolveDependency(priorResults []CheckResult, check Check) *CheckResult {
 	if check.DependsOn == "" {
 		return nil
@@ -180,7 +168,6 @@ func resolveDependency(priorResults []CheckResult, check Check) *CheckResult {
 	return nil
 }
 
-// statusIcon returns the icon for a status.
 func statusIcon(status string) string {
 	switch status {
 	case StatusPass:
@@ -196,7 +183,6 @@ func statusIcon(status string) string {
 	}
 }
 
-// statusColor returns the ANSI color for a status.
 func statusColor(status string) string {
 	switch status {
 	case StatusPass:
@@ -212,7 +198,6 @@ func statusColor(status string) string {
 	}
 }
 
-// statusLabel returns the display label for a status.
 func statusLabel(status string) string {
 	switch status {
 	case StatusPass:
@@ -228,15 +213,12 @@ func statusLabel(status string) string {
 	}
 }
 
-// printTableTo writes the formatted table output to w.
 func printTableTo(w io.Writer, results []CheckResult, overall string) {
-	// Header
 	fmt.Fprintln(w)
-	fmt.Fprintf(w, "%s━━━ Kuro — System Diagnostics%s\n\n", colorBold, colorReset)
+	fmt.Fprintf(w, "%s━━━ Kuro Core — System Diagnostics%s\n\n", colorBold, colorReset)
 	fmt.Fprintf(w, "  %-22s %-10s %s\n", "CHECK", "STATUS", "DETAIL")
 	fmt.Fprintf(w, "  %s\n", strings.Repeat("─", 70))
 
-	// Each check
 	for _, r := range results {
 		icon := statusIcon(r.Status)
 		label := statusLabel(r.Status)
@@ -248,7 +230,6 @@ func printTableTo(w io.Writer, results []CheckResult, overall string) {
 		)
 	}
 
-	// Overall
 	fmt.Fprintln(w)
 	if overall == OverallPass {
 		fmt.Fprintf(w, "  %sOverall: ✅ %s%s\n", colorBold, overall, colorReset)
@@ -258,7 +239,6 @@ func printTableTo(w io.Writer, results []CheckResult, overall string) {
 	fmt.Fprintln(w)
 }
 
-// printJSONTo writes structured JSON output to w.
 func printJSONTo(w io.Writer, results []CheckResult, overall string, exitCode int) {
 	output := DoctorOutput{
 		Checks:   results,
@@ -270,15 +250,12 @@ func printJSONTo(w io.Writer, results []CheckResult, overall string, exitCode in
 	_ = enc.Encode(output)
 }
 
-// stdoutWriter is the default output writer (overridden in tests).
 var stdoutWriter io.Writer = os.Stdout
 
-// printTable writes the table to stdout.
 func printTable(results []CheckResult, overall string) {
 	printTableTo(stdoutWriter, results, overall)
 }
 
-// printJSON writes the JSON to stdout.
 func printJSON(results []CheckResult, overall string, exitCode int) {
 	printJSONTo(stdoutWriter, results, overall, exitCode)
 }
