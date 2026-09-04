@@ -6,7 +6,7 @@
 # Usage: make <target>
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: build test test-unit test-coverage lint clean install help
+.PHONY: build test test-unit test-coverage lint clean install proxy e2e-core help
 
 SHELL := /bin/bash
 BIN_DIR := bin
@@ -41,6 +41,20 @@ install: build
 	@install -m 755 $(BINARY) /usr/local/bin/kuro
 	@echo "✅ Installed: /usr/local/bin/kuro"
 
+# Local git-proxy (fail-closed pre-push gate).
+# Optional env:
+#   SCAN_MODE=local|api   (default local — runs kuro scan --json)
+#   KURO_BIN=./bin/kuro   (path to CLI when SCAN_MODE=local)
+proxy:
+	@echo "🚪 Starting local git-proxy on :8000..."
+	@echo "   Tip: SCAN_MODE=local KURO_BIN=$$(pwd)/bin/kuro (default local scan)"
+	@echo "        SCAN_MODE=api for Enterprise API path"
+	cd services/git-proxy && go run .
+
+e2e-core: build
+	@echo "🧪 Running Core-local E2E (no Postgres/NATS/API)..."
+	@bash tests/e2e-core-local.sh
+
 clean:
 	@echo "🧹 Cleaning artifacts..."
 	@rm -rf $(BIN_DIR) reports/
@@ -54,6 +68,7 @@ help:
 	@echo "  make test-coverage Generate test coverage report in reports/coverage.out"
 	@echo "  make lint          Run go vet analysis"
 	@echo "  make install       Install binary to /usr/local/bin/kuro"
+	@echo "  make proxy         Run local git-proxy (SCAN_MODE / KURO_BIN)"
+	@echo "  make e2e-core      Build + run Core-local E2E (tests/e2e-core-local.sh)"
 	@echo "  make clean         Remove build artifacts"
 	@echo "  make help          Show this menu"
-
