@@ -14,8 +14,8 @@ Thank you for contributing to Kuro Core! This document provides guidelines for s
 ### Build & Run Locally
 ```bash
 # Clone the repository
-git clone https://github.com/Haiagari/kuro.git
-cd kuro
+git clone https://github.com/Haiagari/kuro-core.git
+cd kuro-core
 
 # Compile the standalone CLI binary
 make build
@@ -49,7 +49,7 @@ make test-coverage
 kuro-core/
 ├── bin/                      # Compiled binary outputs (gitignored)
 ├── cli/                      # Standalone CLI and TUI implementation
-│   ├── cmd/                  # Subcommands (scan, fix, canary, doctor)
+│   ├── cmd/                  # Subcommands (scan, fix, canary, doctor, …)
 │   └── internal/
 │       ├── orchestrator/     # 6-phase scan pipeline & Docker adapters
 │       └── tui/              # Bubbletea terminal interface

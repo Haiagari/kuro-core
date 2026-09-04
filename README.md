@@ -7,22 +7,15 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Release-v0.1.0-emerald?style=flat-square)](https://github.com/Haiagari/kuro/releases)
-
-<!--
-<p align="center">
-  <a href="https://docs.kuro.dev"><img src="https://img.shields.io/badge/Docs-docs.kuro.dev-000000?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentation" /></a>
-  &nbsp;&nbsp;
-  <a href="https://kuro.dev/enterprise"><img src="https://img.shields.io/badge/Enterprise-kuro.dev%2Fenterprise-0052CC?style=for-the-badge&logo=shield&logoColor=white" alt="Enterprise & Cloud" /></a>
-</p>
--->
+[![Version](https://img.shields.io/badge/Release-v0.1.0-emerald?style=flat-square)](https://github.com/Haiagari/kuro-core/releases)
 
 <br/>
 
 ```bash
 # Build and run Kuro Core CLI in seconds
-git clone https://github.com/Haiagari/kuro.git && cd kuro
+git clone https://github.com/Haiagari/kuro-core.git && cd kuro-core
 make build
+./bin/kuro doctor
 ./bin/kuro scan ./my-project
 ```
 
@@ -50,6 +43,8 @@ make build
 **Kuro Core** is an open-source, local-first AppSec gatekeeper designed for individual developers and teams who want military-grade code security without sending code to the cloud or setting up complex infrastructure.
 
 Running directly on your workstation via Docker or Podman, it coordinates 4 industry-standard security scanners, prevents leaks before they leave your computer, and gives you actionable remediation right inside your terminal.
+
+For multi-tenant dashboards, NATS, and Firecracker sandboxes, see **Kuro Enterprise** (`Haiagari/kuro-enterprise`) — not required for Core.
 
 ---
 
@@ -159,26 +154,34 @@ kuro canary verify AKIAIOSFODNN7EXAMPLE
 
 ## CLI Command Reference
 
+Core happy path (local, zero server):
+
 ```bash
-# 1. Scan a project directory
+# Diagnostics
+kuro doctor
+
+# Scan a project directory
 kuro scan ./my-project
 kuro scan ./my-project --json
 kuro scan ./my-project --history
 
-# 2. Interactive threat remediation & secret extraction
+# Interactive threat remediation & secret extraction
 kuro fix ./my-project --dry-run
 kuro fix ./my-project --auto
 
-# 3. Canary token management
+# Canary token management
 kuro canary generate --type aws
 kuro canary verify <token>
 
-# 4. Environment and runtime diagnostics
-kuro doctor
+# Attestation (in-toto / SLSA)
+kuro attest verify
+kuro attest keygen
 
-# 5. Check active edition status
+# License / edition
 kuro license status
 ```
+
+Optional server / Enterprise-companion commands (`auth`, `deploy`, `setup`, `health`, `up`, `backup`, `webhook`, `scan --remote`) talk to a Kuro server stack. Prefer **Kuro Enterprise** for that path; Core’s default is fully local.
 
 ---
 
