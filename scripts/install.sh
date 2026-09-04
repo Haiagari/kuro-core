@@ -2,10 +2,10 @@
 # Kuro — install script
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/Haiagari/kuro/main/scripts/install.sh | sh
+#   curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
 #
 # To pin a specific version:
-#   curl -sSL https://raw.githubusercontent.com/Haiagari/kuro/main/scripts/install.sh | sh -s -- v0.1.0
+#   curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
 #
 # Environment variables:
 #   KURO_INSTALL_DIR  — install destination (default: /usr/local/bin)
@@ -20,7 +20,7 @@
 set -eu
 
 # ── Config ──────────────────────────────────────────────────
-REPO="Haiagari/kuro"
+REPO="Haiagari/kuro-core"
 INSTALL_DIR="${KURO_INSTALL_DIR:-/usr/local/bin}"
 VERSION="${KURO_VERSION:-${1:-}}"
 
@@ -74,13 +74,13 @@ resolve_version() {
 
   if [ -z "$tag" ] || [ "$tag" = "null" ]; then
     error "Could not determine latest release from GitHub API.
-  Try specifying a version: curl ... | sh -s -- v0.1.0"
+  Try specifying a version: curl ... | sh -s -- v0.1.1"
   fi
 
   echo "$tag"
 }
 
-# ── Download ────────────────────────────────────────────────
+# ── Download ───────────────────────────────────────────────
 download() {
   url="$1"
   dest="$2"
@@ -111,17 +111,17 @@ main() {
   tmpdir=$(mktemp -d /tmp/kuro-install-XXXXXX)
   trap 'rm -rf "$tmpdir"' EXIT
 
-  # ── Download archive ───────────────────────────────────────
+  # ── Download archive ─────────────────────────────────────
   printf "  Downloading %s ... " "$archive"
   download "${download_url}/${archive}" "${tmpdir}/${archive}"
   info "done"
 
-  # ── Download checksums ─────────────────────────────────────
+  # ── Download checksums ───────────────────────────────────
   printf "  Downloading checksums ... "
   download "${download_url}/${checksum_file}" "${tmpdir}/${checksum_file}"
   info "done"
 
-  # ── Verify checksum ────────────────────────────────────────
+  # ── Verify checksum ──────────────────────────────────────
   printf "  Verifying checksum ... "
   expected=$(grep "${archive}" "${tmpdir}/${checksum_file}" | awk '{print $1}')
   if [ -z "$expected" ]; then

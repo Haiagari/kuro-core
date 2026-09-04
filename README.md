@@ -7,7 +7,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Release-v0.1.0-emerald?style=flat-square)](https://github.com/Haiagari/kuro-core/releases)
+[![Version](https://img.shields.io/badge/Release-v0.1.1-emerald?style=flat-square)](https://github.com/Haiagari/kuro-core/releases)
 
 <br/>
 
@@ -190,6 +190,12 @@ Optional server / Enterprise-companion commands (`auth`, `deploy`, `setup`, `hea
 ---
 
 ## Building & Installing
+
+### Install from release (recommended)
+```bash
+curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
+# pin: curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
+```
 
 ### Compile binary
 ```bash

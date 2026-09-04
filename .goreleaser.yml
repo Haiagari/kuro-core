@@ -8,7 +8,7 @@ project_name: kuro
 
 before:
   hooks:
-    - go mod tidy
+    - go -C cli mod tidy
 
 builds:
   - id: kuro-cli
@@ -57,14 +57,14 @@ changelog:
 release:
   github:
     owner: Haiagari
-    name: kuro
+    name: kuro-core
   header: |
     ## Kuro {{ .Version }}
 
     ### Installation
 
     ```bash
-    curl -sSL https://raw.githubusercontent.com/Haiagari/kuro/main/scripts/install.sh | sh
+    curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
     ```
 
     ### Checksums
@@ -73,4 +73,4 @@ release:
     {{ range .Artifacts }}{{ .Name }} — SHA-256: {{ .Checksum }}
     {{ end }}```
   footer: |
-    See [CHANGELOG.md](https://github.com/sambleed/kuro-pipeline/blob/main/CHANGELOG.md) for full release notes.
+    See [CHANGELOG.md](https://github.com/Haiagari/kuro-core/blob/main/CHANGELOG.md) for full release notes.

@@ -7,6 +7,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — [Semantic V
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] - 2026-09-04
+
 ### Fixed
 - `kuro scan PATH --json` now honors flags after the path (Go `flag` previously stopped at the first positional).
 - Core local e2e: parse the root scan JSON for `decision` (not nested finding objects); secret fixture uses a synthetic Slack bot token because AWS docs `EXAMPLE` keys are allowlisted by Gitleaks.
