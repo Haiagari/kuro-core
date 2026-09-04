@@ -1,4 +1,4 @@
-# Kuro Core offline Semgrep ruleset — used with --network=none (no --config=auto).
+# Kuro Core offline Semgrep ruleset — used with --network=none (offline rules).
 # Keep small and high-signal; Gitleaks covers most secret detectors.
 rules:
   - id: kuro.generic.hardcoded-credential
