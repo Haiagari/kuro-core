@@ -54,7 +54,6 @@ func RunScan(args []string) {
 	}
 
 	// ── Display mode priority: json > tui > auto-tty > text ──
-	// Detect if --tui was explicitly provided (Go's flag package lacks Changed)
 	tuiChanged := false
 	for _, arg := range args {
 		if arg == "--tui" || arg == "-tui" {
@@ -75,7 +74,6 @@ func RunScan(args []string) {
 	} else if tuiChanged && tuiValue {
 		useTUI = true
 	} else if !tuiChanged && isTTY {
-		// Auto-detect: stdout is a TTY and --tui was not explicitly set
 		useTUI = true
 	}
 
@@ -84,7 +82,6 @@ func RunScan(args []string) {
 	mode := ""
 
 	if *remoteFlag {
-		// Force remote mode
 		cfg, err := config.Load()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
@@ -98,7 +95,6 @@ func RunScan(args []string) {
 		adapter = orchestrator.NewRemoteAdapter(cl)
 		mode = "remote"
 	} else if isLocalPath(target) {
-		// Local path → local mode
 		history := *historyFlag
 		adapter = orchestrator.NewLocalAdapter(history)
 		if history {
@@ -107,7 +103,6 @@ func RunScan(args []string) {
 			mode = fmt.Sprintf("local (%s)", detectRuntime())
 		}
 	} else {
-		// URL → modo remoto
 		cfg, err := config.Load()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
@@ -122,7 +117,6 @@ func RunScan(args []string) {
 		mode = "remote"
 	}
 
-	// ── Header (text mode only) ───────────────────────────
 	if !*jsonFlag && !useTUI {
 		fmt.Println()
 		fmt.Printf("%s🔍 Kuro — Security Gate%s\n", colorBold, colorReset)
@@ -131,7 +125,6 @@ func RunScan(args []string) {
 		fmt.Println()
 	}
 
-	// ── Run orchestrator ──────────────────────────────────
 	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Minute)
 	defer cancel()
 
@@ -139,7 +132,6 @@ func RunScan(args []string) {
 	var err error
 
 	if useTUI {
-		// ── TUI mode ──────────────────────────────────────
 		eventsCh := make(chan orchestrator.PhaseEvent, 64)
 		m := tui.NewModel(target, mode, eventsCh, ctx, cancel)
 		prog := tea.NewProgram(m)
@@ -155,33 +147,31 @@ func RunScan(args []string) {
 		orch := orchestrator.NewWithEvents(adapter, false, eventsCh)
 		result, err = orch.Run(ctx, target)
 		close(eventsCh)
-
-		// Wait for TUI to complete
 		<-tuiDone
 	} else {
 		orch := orchestrator.New(adapter, !*jsonFlag)
 		result, err = orch.Run(ctx, target)
 	}
 
-	// ── Output ────────────────────────────────────────────
 	if code := scanOutput(result, err, *jsonFlag, useTUI); code != 0 {
 		os.Exit(code)
 	}
 }
 
 // scanOutput prints the scan result in the selected display mode and returns
-// the process exit code: 0 on success, 1 when the scan failed.
+// the process exit code: 0 on pass, 2 on review, 1 on block or error.
 func scanOutput(result *orchestrator.ScanResult, err error, jsonMode, tuiMode bool) int {
 	if jsonMode {
 		printJSON(result, err)
 		if err != nil {
 			return 1
 		}
-		return 0
+		if result == nil {
+			return 1
+		}
+		return decisionExitCode(result.Decision)
 	}
 
-	// In TUI mode the scan has already been displayed; print
-	// a compact summary below so there's a persistent record.
 	if tuiMode {
 		fmt.Println()
 		fmt.Printf("%s═══════════════════════════════════════%s\n", colorBold, colorReset)
@@ -203,7 +193,7 @@ func scanOutput(result *orchestrator.ScanResult, err error, jsonMode, tuiMode bo
 		if err != nil {
 			return 1
 		}
-		return 0
+		return decisionExitCode(result.Decision)
 	}
 
 	fmt.Println()
@@ -227,7 +217,6 @@ func scanOutput(result *orchestrator.ScanResult, err error, jsonMode, tuiMode bo
 	fmt.Printf("  Duration: %s\n", result.Duration.Round(time.Millisecond))
 	fmt.Println()
 
-	// ── Findings ─────────────────────────────────────────
 	if len(result.Findings) > 0 {
 		fmt.Printf("  %sFindings:%s\n", colorBold, colorReset)
 		for _, f := range result.Findings {
@@ -245,7 +234,6 @@ func scanOutput(result *orchestrator.ScanResult, err error, jsonMode, tuiMode bo
 		fmt.Println()
 	}
 
-	// Summary
 	if result.FindingsBySeverity != nil {
 		fmt.Printf("  %sSummary:%s\n", colorBold, colorReset)
 		if c, ok := result.FindingsBySeverity["CRITICAL"]; ok && c > 0 {
@@ -262,26 +250,22 @@ func scanOutput(result *orchestrator.ScanResult, err error, jsonMode, tuiMode bo
 		}
 	}
 	fmt.Println()
-	return 0
+	return decisionExitCode(result.Decision)
 }
 
 // ── Helpers ────────────────────────────────────────────────
 
 func isLocalPath(target string) bool {
-	// Starts with http, https, git@ → remote
 	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") ||
 		strings.HasPrefix(target, "git@") || strings.HasPrefix(target, "ssh://") {
 		return false
 	}
-	// Starts with ./ or / or ~ → local
 	if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "/") || strings.HasPrefix(target, "~/") {
 		return true
 	}
-	// If existing directory → local scan
 	if info, err := os.Stat(target); err == nil && info.IsDir() {
 		return true
 	}
-	// Default to remote
 	return false
 }
 
@@ -320,7 +304,18 @@ func padSeverity(s string) string {
 }
 
 func printJSON(result *orchestrator.ScanResult, scanErr error) {
-	// Simple JSON output
+	if result == nil {
+		fmt.Printf("{\n")
+		fmt.Printf("  \"status\": \"failed\",\n")
+		fmt.Printf("  \"decision\": \"\",\n")
+		if scanErr != nil {
+			fmt.Printf("  \"error\": %q,\n", scanErr.Error())
+		}
+		fmt.Printf("  \"findings\": []\n")
+		fmt.Printf("}\n")
+		return
+	}
+
 	fmt.Printf("{\n")
 	fmt.Printf("  \"target\": %q,\n", result.Target)
 	fmt.Printf("  \"mode\": %q,\n", result.Mode)
