@@ -1,51 +1,200 @@
-# CLI & Local Proxy Reference — Kuro Core v0.1.0
+# CLI & JSON Interface — Kuro Core v0.1.1
 
-> **Edition**: Kuro Core (Standalone Edition) · **Version**: v0.1.0
+**Audience:** developers integrating Kuro Core into scripts, CI, or the local Git proxy.  
+**Scope:** Core CLI contracts (commands, flags, JSON stdout, exit codes).
+
+> **Enterprise / server HTTP API is out of scope for this document.**  
+> Optional companion commands (`auth`, `scan --remote`, `webhook`, …) may call a remote Kuro API when configured, but Core’s supported integration surface is the **local CLI**. For multi-tenant HTTP APIs, see [Haiagari/kuro-enterprise](https://github.com/Haiagari/kuro-enterprise).
+
+Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [ATTESTATION.md](ATTESTATION.md) · [../QUICKSTART.md](../QUICKSTART.md)
 
 ---
 
-## CLI Commands
+## Process exit codes (`kuro scan`)
 
-### 1. `kuro scan`
-Runs a multi-scanner audit over local source code:
+| Decision / condition | Exit code |
+|---|---|
+| `pass` / `approved` / `ok` | `0` |
+| `review` | `2` |
+| `block` / unknown / scan error | `1` |
+
+Applies to TUI, text, and `--json` modes (`decision_exit.go`, `scanOutput`).
+
+---
+
+## `kuro scan`
+
 ```bash
-kuro scan ./path/to/project             # Interactive Bubbletea TUI scan
-kuro scan ./path/to/project --json      # Export findings as machine-readable JSON
-kuro scan ./path/to/project --history   # Deep git history scan
+kuro scan <path>|<url> [--json] [--history] [--tui] [--remote]
 ```
 
-### 2. `kuro fix`
-Interactive terminal secret extraction and remediation:
-```bash
-kuro fix [path] --dry-run               # Preview transformations safely
-kuro fix [path] --auto                  # Unattended batch migration of secrets to env vars
+| Flag | Meaning |
+|---|---|
+| `--json` | Machine-readable JSON on stdout (no TUI) |
+| `--history` | Full git history scanners (local only) |
+| `--tui` | Force TUI; auto-enabled on TTY when not `--json` |
+| `--remote` | Force remote adapter (needs API key — Enterprise companion) |
+
+**Important:** flags may appear **after** the path (`kuro scan ./proj --json`). Core reorders argv so Go’s `flag` parser accepts this (v0.1.1).
+
+### Local vs remote
+
+| Target | Mode |
+|---|---|
+| `./dir`, `/abs`, `~/…`, existing directory | Local Docker/Podman |
+| `--remote` or `https://` / `git@` / `ssh://` | Remote API (requires `kuro auth`) |
+
+### JSON output (local success shape)
+
+```json
+{
+  "target": "/tmp/project",
+  "mode": "local",
+  "status": "completed",
+  "decision": "pass",
+  "duration": "12.3s",
+  "findings": [
+    {
+      "scanner": "gitleaks",
+      "severity": "CRITICAL",
+      "title": "…",
+      "file": ".env",
+      "line": 1
+    }
+  ]
+}
 ```
 
-### 3. `kuro canary`
-Generates and audits honeypot decoy credentials:
-```bash
-kuro canary generate --type aws         # Create decoy AWS credentials
-kuro canary generate --type github      # Create decoy GitHub PAT
-kuro canary verify <token>              # Verify canary authenticity via HMAC signature
-kuro canary list [dir]                  # List active canaries in workspace
+On hard failure with nil result:
+
+```json
+{
+  "status": "failed",
+  "decision": "",
+  "error": "…",
+  "findings": []
+}
 ```
 
-### 4. `kuro doctor`
-Runs workstation diagnostics to ensure container runtimes and scanners are operational:
+**Pitfall for scripts:** parse the **root** object’s `decision`. Nested finding objects do not carry the gate decision (Core E2E teaches this).
+
+### Examples
+
+```bash
+kuro scan ./my-project
+kuro scan ./my-project --json; echo $?
+kuro scan ./my-project --history
+kuro scan --json ./my-project    # equivalent ordering
+```
+
+---
+
+## `kuro doctor`
+
 ```bash
 kuro doctor
 kuro doctor --json
 ```
 
+Core checks: container runtime, Git, scanner images, disk space, Kuro binary. Exit `0` allows warnings; critical failures are non-zero.
+
 ---
 
-## Local Git Proxy (:8000)
+## `kuro fix`
 
-Runs locally on port `8000` to intercept `git push` operations:
+```bash
+kuro fix [path] [--dry-run|-d] [--auto|-a|-y]
+```
 
-- **Protocol**: Smart HTTP (`/owner/repo.git/git-receive-pack`)
-- **Mode**: Fail-Closed (`PROXY_FAIL_MODE=closed`)
-- **Timeout**: Configurable via `PROXY_SCAN_TIMEOUT` (default: 30 seconds)
-- **Exit Behavior**:
-  - `HTTP 200`: All checks passed, push forwarded to upstream remote.
-  - `HTTP 403`: Push rejected, scan findings streamed directly to git stderr.
+Interactive remediation of hardcoded secrets. `--dry-run` previews; `--auto` applies without prompts. Suppressions → `.kuro-suppressions.json`.
+
+---
+
+## `kuro canary`
+
+```bash
+kuro canary generate [--type aws|github|slack|jwt|generic] [--format env|json|yaml|tf] [--memo …] [--output file]
+kuro canary inject <dir> [--type …] [--format …]
+kuro canary verify <token|file>
+kuro canary list [dir]
+```
+
+---
+
+## `kuro attest`
+
+See [ATTESTATION.md](ATTESTATION.md).
+
+```bash
+kuro attest verify [--commit SHA] [--repo path] [--pubkey key|file] [--file envelope.json]
+kuro attest keygen
+kuro attest inspect <envelope.json>
+```
+
+---
+
+## `kuro proxy`
+
+```bash
+kuro proxy [--addr :8000] [--upstream https://github.com]
+```
+
+| Env | Default | Purpose |
+|---|---|---|
+| `LISTEN_ADDR` | `:8000` | Bind address (`--addr` overrides) |
+| `UPSTREAM_URL` | `https://github.com` | Forge upstream |
+| `SCAN_MODE` | `local` | `local` → `kuro scan --json`; `api`/`remote`/`enterprise` → HTTP API |
+| `KURO_BIN` | `kuro` on PATH | CLI used in local mode |
+| `KURO_URL` / `KURO_API_KEY` | — | Enterprise API mode |
+
+Behavior: fail-closed Smart HTTP; policy breach → **403** + findings on git stderr.
+
+---
+
+## Optional Enterprise companion CLI
+
+These exist in the binary but are **not** the Core happy path:
+
+`auth`, `status`, `backup`, `webhook`, `update`, `deploy`, `setup`, `health`, `up`, `license apply`, `scan --remote`
+
+Document their HTTP contracts in Enterprise — not here.
+
+---
+
+## Integrating with CI (Core)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+kuro doctor
+set +e
+kuro scan "$GITHUB_WORKSPACE" --json > scan.json
+code=$?
+set -e
+# 0 pass, 2 review (policy choice), 1 block/error
+if [ "$code" -eq 1 ]; then
+  cat scan.json
+  exit 1
+fi
+```
+
+Ensure Docker/Podman is available to the job and images can be pulled once.
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| Scripts ignore `--json` after path | Upgrade to ≥ v0.1.1 |
+| JSON parse grabs wrong `decision` | Decode root object only |
+| Exit `1` with empty findings | Treat as error path; check `error` field |
+| Proxy in API mode on Core laptop | Switch back to `SCAN_MODE=local` |
+
+---
+
+## See also
+
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [SCANNER-ARCHITECTURE.md](SCANNER-ARCHITECTURE.md)
+- [../tests/e2e-core-local.sh](../tests/e2e-core-local.sh)

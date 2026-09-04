@@ -3,9 +3,14 @@
 All notable changes to Kuro Core are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — [Semantic Versioning](https://semver.org/)
 
+Repository: [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core)
+
 ---
 
 ## [Unreleased]
+
+### Docs
+- Complete Core v0.1.1 documentation pass: README, QUICKSTART, AGENTS, CONTRIBUTING, SECURITY, docs/{API,ARCHITECTURE,ATTESTATION,SCANNER-ARCHITECTURE}, scripts/README, tests/README, and related pointers — aligned to local-first Core (no Enterprise-as-default), install URLs, exit codes, proxy/`SCAN_MODE`, Semgrep embedded rules, and Core vs Enterprise E2E.
 
 ---
 

@@ -1,54 +1,108 @@
-# AGENTS.md — Project Context & Architecture Guidelines for Kuro Core
+# AGENTS.md — Kuro Core context for AI coding assistants
 
-This document serves as the authoritative context and architectural guide for AI coding assistants working on the **Kuro Core** repository.
+**Audience:** AI agents and human contributors automating work in this repository.  
+**Scope:** [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core) only — local-first AppSec gate. Do **not** assume Postgres, NATS, MinIO, or Enterprise dashboards are required.
+
+Related: [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [QUICKSTART.md](QUICKSTART.md)
 
 ---
 
-## 1. Project Overview & Architecture
+## 1. Product truth (must match code)
 
-Kuro Core is an open-source, local-first zero-trust security gate and CLI designed to intercept git pushes, execute multi-scanner validation (Gitleaks, Semgrep, Trivy, Checkov), and remediate threats locally without server dependencies.
+| Fact | Value |
+|---|---|
+| Product | **Kuro Core** — single-binary local AppSec gate |
+| Repo | Always `Haiagari/kuro-core` (never `Haiagari/kuro`, `sambleed/*`, or `kuro-pipeline` unless historical notes) |
+| Edition | Core = local Docker/Podman scanners; Enterprise = `Haiagari/kuro-enterprise` |
+| Version docs target | **v0.1.1** |
+| License | AGPL-3.0-only |
+| Happy path | `kuro doctor` → `kuro scan` → `kuro fix` / `kuro canary` → `kuro proxy` |
+| Install | `curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh \| sh` (pin: `sh -s -- v0.1.1`); also `make build` / `make install` |
+| Scan exit codes | pass=`0`, review=`2`, block/error=`1`; flags after path OK (`kuro scan PATH --json`) |
+| Scanners | Gitleaks, Semgrep (**embedded** rules, not `--config=auto`), Trivy, Checkov |
+| Hardening | `--network=none`, `--cap-drop=ALL`, `no-new-privileges`, `--memory=512m` |
+| Proxy | Prefer `./bin/kuro proxy`; `SCAN_MODE=local` default; `SCAN_MODE=api` for Enterprise; `services/git-proxy` for Docker/standalone |
+| E2E | Core: `make e2e-core` / `tests/e2e-core-local.sh`; Enterprise/API: `tests/e2e-proxy.sh` |
 
-### Directory Structure
+---
+
+## 2. Directory map
 
 ```
 kuro-core/
-├── bin/                             # Compiled binary outputs
-├── cli/                             # CLI Tool & TUI (Go + Bubbletea)
-│   ├── cmd/                         # CLI subcommands (scan, fix, canary, doctor)
+├── bin/                      # build output (gitignored)
+├── cli/                      # main binary (Go + Bubbletea)
+│   ├── cmd/                  # scan, fix, canary, doctor, proxy, attest, …
 │   └── internal/
-│       ├── doctor/                  # Environment diagnostics engine
-│       ├── orchestrator/            # 6-phase scan pipeline & Docker adapters
-│       ├── output/                  # Formatting (JSON, SARIF, ANSI)
-│       └── tui/                     # Interactive Bubbletea terminal interface
-├── deploy/                          # Local policy rules
-│   ├── policies/                    # Static default policies (default-policy.json)
-│   └── security/                    # Scanner base configs (Gitleaks, Semgrep)
-├── docs/                            # Technical documentation for Kuro Core
-├── services/
-│   └── git-proxy/                   # Local pre-push proxy listener (:8000)
-├── tests/                           # Chaos and unit testing suites
-├── Makefile                         # Unified build and test automation
-└── go.work                          # Multi-module Go workspace (cli + git-proxy)
+│       ├── doctor/
+│       ├── orchestrator/     # 6-phase pipeline, containers, semgrep rules
+│       ├── output/
+│       └── tui/
+├── deploy/policies/          # default-policy.json
+├── deploy/security/          # scanner base configs
+├── docs/                     # architecture, scanners, API, attestation
+├── services/git-proxy/       # standalone proxy main / images
+├── scripts/                  # install.sh + helpers
+├── tests/                    # unit helpers, e2e-core-local, e2e-proxy, chaos
+├── Makefile
+└── go.work                   # cli + git-proxy modules
 ```
 
 ---
 
-## 2. Technology Stack
+## 3. Technology stack
 
-| Domain | Technology / Spec |
+| Domain | Choice |
 |---|---|
-| **Language** | Go 1.26+ |
-| **CLI & TUI** | Bubbletea + Lipgloss |
-| **Scanner Fleet** | Gitleaks, Semgrep, Trivy, Checkov (Ephemeral Docker/Podman) |
-| **Interception Proxy** | Go HTTP/TCP Smart-Git Server (`git-receive-pack`) |
-| **Policy Engine** | Static JSON policy evaluation |
-| **License** | AGPL-3.0 |
+| Language | Go 1.26+ |
+| CLI / TUI | Bubbletea + Lipgloss |
+| Scanners | Gitleaks, Semgrep, Trivy, Checkov (+ TruffleHog in `--history`) |
+| Proxy | Go Smart-HTTP (`git-receive-pack`) |
+| Policy | Static JSON |
+| License | AGPL-3.0-only |
 
 ---
 
-## 3. Mandatory Governance & Conventions
+## 4. Mandatory conventions
 
-- **Semantic Versioning 2.0.0**: Strictly follow `MAJOR.MINOR.PATCH`.
-- **Conventional Commits**: Commit messages must follow format `feat(...)`, `fix(...)`, `docs(...)`.
-- **Zero Attribution**: Never add "Co-Authored-By" or AI-assisted attribution to commits.
-- **Fail-Closed Principle**: All security gates default to blocking if execution or parsing fails.
+- **SemVer 2.0.0** for releases.
+- **Conventional Commits:** `feat(scope):`, `fix(scope):`, `docs(scope):`, …
+- **Zero attribution:** never add `Co-Authored-By` or AI-assisted trailer lines.
+- **Fail-closed:** security gates block on error/parse failure.
+- **Docs honesty:** do not document Enterprise as the default; mark server HTTP API out-of-scope in Core docs.
+- **Do not create git tags** unless a human explicitly asks.
+
+---
+
+## 5. Safe change patterns
+
+| Task | Prefer |
+|---|---|
+| Local scan behavior | `cli/internal/orchestrator/*` |
+| Exit codes / flag parsing | `cli/cmd/scan.go`, `decision_exit.go` |
+| Proxy UX | `cli/cmd/proxy.go` + `kuro/git-proxy/server` |
+| Semgrep offline | Keep embedded `rules/semgrep-core.yml`; never restore `--config=auto` for Core |
+| Docs | Update README + QUICKSTART + docs/* together when behavior changes |
+| Tests | `make test`; behavior: `make e2e-core` |
+
+---
+
+## 6. Common pitfalls for agents
+
+1. Wrong clone/install URL (`Haiagari/kuro` or `sambleed/…`) — always `Haiagari/kuro-core`.
+2. Treating `tests/e2e-proxy.sh` as Core default — it is Enterprise/API.
+3. Documenting memory as `1g` — runtime uses `--memory=512m`.
+4. Claiming Core needs Postgres/NATS/MinIO — it does not.
+5. Breaking `kuro scan PATH --json` flag reorder.
+
+---
+
+## 7. Quick verification commands
+
+```bash
+make build
+./bin/kuro doctor
+./bin/kuro scan /tmp/clean --json; echo $?    # expect 0 on pass
+make test
+make e2e-core   # needs Docker/Podman
+```
