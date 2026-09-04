@@ -38,14 +38,14 @@ func TestHelpFlag(t *testing.T) {
 	}
 
 	output := string(out)
-	if !strings.Contains(output, "KURO Pipeline") {
-		t.Error("--help should contain 'KURO Pipeline'")
+	if !strings.Contains(output, "KURO CORE") {
+		t.Error("--help should contain 'KURO CORE'")
 	}
 	if !strings.Contains(output, "scan") {
 		t.Error("--help should mention 'scan' command")
 	}
-	if !strings.Contains(output, "deploy") {
-		t.Error("--help should mention 'deploy' command")
+	if !strings.Contains(output, "doctor") {
+		t.Error("--help should mention 'doctor' command")
 	}
 	if !strings.Contains(output, "help") {
 		t.Error("--help should mention 'help' command")
@@ -59,8 +59,8 @@ func TestHelpShortFlag(t *testing.T) {
 	}
 
 	output := string(out)
-	if !strings.Contains(output, "KURO Pipeline") {
-		t.Error("-h should show help with 'KURO Pipeline'")
+	if !strings.Contains(output, "KURO CORE") {
+		t.Error("-h should show help with 'KURO CORE'")
 	}
 }
 
@@ -70,8 +70,8 @@ func TestHelpSubcommand(t *testing.T) {
 		t.Fatalf("help subcommand should not error: %v\nOutput: %s", err, out)
 	}
 
-	if !strings.Contains(string(out), "KURO Pipeline") {
-		t.Error("help subcommand should show 'KURO Pipeline'")
+	if !strings.Contains(string(out), "KURO CORE") {
+		t.Error("help subcommand should show 'KURO CORE'")
 	}
 }
 
@@ -106,8 +106,8 @@ func TestNoArgs(t *testing.T) {
 		t.Fatalf("expected ExitError, got %T: %v", err, err)
 	}
 
-	if !strings.Contains(string(out), "KURO Pipeline") {
-		t.Error("no-args output should show help with 'KURO Pipeline'")
+	if !strings.Contains(string(out), "KURO CORE") {
+		t.Error("no-args output should show help with 'KURO CORE'")
 	}
 }
 
