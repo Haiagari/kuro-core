@@ -95,11 +95,15 @@ By default the proxy uses **`SCAN_MODE=local`**: it shells out to `kuro scan --j
 # Ensure kuro is available (SCAN_MODE=local default)
 export PATH="$PWD/bin:$PATH"   # or: export KURO_BIN=$PWD/bin/kuro
 
-# Start proxy (runs on :8000)
-cd services/git-proxy && go run .
+# Start proxy (runs on :8000) — preferred one-binary path
+./bin/kuro proxy
+# or: make proxy
+
+# Optional flags
+# ./bin/kuro proxy --addr :8000 --upstream https://github.com
 
 # Enterprise API mode (optional)
-# SCAN_MODE=api KURO_URL=http://api:8080 KURO_API_KEY=... go run .
+# SCAN_MODE=api KURO_URL=http://api:8080 KURO_API_KEY=... ./bin/kuro proxy
 ```
 
 Point your repository remote to the local proxy:
@@ -109,6 +113,8 @@ git push proxy main
 ```
 
 If secrets or critical vulnerabilities are introduced, the push is immediately rejected at the TCP layer. Run `kuro doctor` if the proxy cannot find scanners or the CLI.
+
+> Docker / standalone: `services/git-proxy` still builds as its own binary for container images.
 
 ---
 

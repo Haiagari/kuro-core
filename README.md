@@ -59,7 +59,7 @@ flowchart TB
     end
 
     subgraph Boundary["Transport Interception Boundary"]
-        GitProxy["Local Git Proxy (:8000)\nservices/git-proxy (Fail-Closed)"]
+        GitProxy["Local Git Proxy (:8000)\nkuro proxy (Fail-Closed)"]
     end
 
     subgraph CoreEngine["Kuro Core Engine (cli/internal/orchestrator)"]
@@ -132,7 +132,7 @@ Kuro Core coordinates multiple containerized scanners running in parallel with `
 - **Checkov**: Infrastructure as Code (IaC) misconfiguration audits for Dockerfiles and Terraform.
 
 ### 2. Pre-Push Interception Proxy
-A lightweight HTTP/TCP proxy that runs on `localhost:8000`. By configuring your git remote to point to the proxy, any `git push` is inspected before forwarding to GitHub/GitLab. If hardcoded secrets or critical vulnerabilities exist, the push is aborted with an error message in stderr.
+A lightweight HTTP/TCP proxy that runs on `localhost:8000` via **`kuro proxy`** (same binary as the CLI). By configuring your git remote to point to the proxy, any `git push` is inspected before forwarding to GitHub/GitLab. If hardcoded secrets or critical vulnerabilities exist, the push is aborted with an error message in stderr. Docker/standalone images still build from `services/git-proxy`.
 
 ### 3. Interactive Terminal Auto-Remediation
 Run `kuro fix` to inspect detected secrets interactively:
@@ -164,6 +164,10 @@ kuro doctor
 kuro scan ./my-project
 kuro scan ./my-project --json
 kuro scan ./my-project --history
+
+# Fail-closed local Git proxy (pre-push gate)
+kuro proxy
+kuro proxy --addr :8000 --upstream https://github.com
 
 # Interactive threat remediation & secret extraction
 kuro fix ./my-project --dry-run

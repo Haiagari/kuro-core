@@ -8,12 +8,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — [Semantic V
 ## [Unreleased]
 
 ### Added
+- **`kuro proxy` CLI command**: first-class in-process local Git proxy (`./bin/kuro proxy`); server logic lives in importable `kuro/git-proxy/server` while `services/git-proxy` keeps a thin `main` for Docker/standalone.
 - **Core doctor checks**: `kuro doctor` now validates Container Runtime, Git, Scanner Images, Disk Space, and Kuro Binary (no Postgres/NATS/MinIO).
 - **git-proxy local scan mode**: default `SCAN_MODE=local` runs `kuro scan --json` via the Core CLI; set `SCAN_MODE=api` for the Enterprise API path.
 - **Core-local E2E**: `tests/e2e-core-local.sh` and `make e2e-core` exercise doctor + clean/secret scans without Postgres/NATS/API (Enterprise proxy E2E remains `tests/e2e-proxy.sh`).
 - **Makefile targets**: `make proxy` runs local git-proxy; `make e2e-core` builds and runs Core-local E2E.
 
 ### Changed
+- **Proxy happy path**: docs, `kuro help`, and `make proxy` prefer `./bin/kuro proxy` instead of `cd services/git-proxy && go run .`.
 - **Docs & CLI help aligned to Core positioning**: clone/install URLs now point to `Haiagari/kuro-core`; `kuro help` leads with local-first commands (`doctor`, `scan`, `fix`, `canary`, `attest`) and demotes server/Enterprise companion commands.
 - **Quickstart happy path**: doctor → scan → fix/canary → local git-proxy.
 - **Local scanner containers hardened**: `runContainer` adds `--network=none`, `--cap-drop=ALL`, and `--security-opt=no-new-privileges`.

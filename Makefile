@@ -41,15 +41,15 @@ install: build
 	@install -m 755 $(BINARY) /usr/local/bin/kuro
 	@echo "✅ Installed: /usr/local/bin/kuro"
 
-# Local git-proxy (fail-closed pre-push gate).
+# Local git-proxy (fail-closed pre-push gate) via the unified CLI.
 # Optional env:
 #   SCAN_MODE=local|api   (default local — runs kuro scan --json)
 #   KURO_BIN=./bin/kuro   (path to CLI when SCAN_MODE=local)
-proxy:
-	@echo "🚪 Starting local git-proxy on :8000..."
+proxy: build
+	@echo "🚪 Starting local git-proxy on :8000 via ./bin/kuro proxy..."
 	@echo "   Tip: SCAN_MODE=local KURO_BIN=$$(pwd)/bin/kuro (default local scan)"
 	@echo "        SCAN_MODE=api for Enterprise API path"
-	cd services/git-proxy && go run .
+	KURO_BIN=$$(pwd)/$(BINARY) $(BINARY) proxy
 
 e2e-core: build
 	@echo "🧪 Running Core-local E2E (no Postgres/NATS/API)..."
@@ -68,7 +68,7 @@ help:
 	@echo "  make test-coverage Generate test coverage report in reports/coverage.out"
 	@echo "  make lint          Run go vet analysis"
 	@echo "  make install       Install binary to /usr/local/bin/kuro"
-	@echo "  make proxy         Run local git-proxy (SCAN_MODE / KURO_BIN)"
+	@echo "  make proxy         Build + run local git-proxy via ./bin/kuro proxy"
 	@echo "  make e2e-core      Build + run Core-local E2E (tests/e2e-core-local.sh)"
 	@echo "  make clean         Remove build artifacts"
 	@echo "  make help          Show this menu"
