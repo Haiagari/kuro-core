@@ -102,19 +102,30 @@ func main() {}
 EOF
 
   set +e
-  out="$("$KURO_BIN" scan "$tmp" --json 2>&1)"
+  out="$("$KURO_BIN" scan --json "$tmp" 2>&1)"
   code=$?
   set -e
 
   echo "$out" | sed 's/^/  | /'
 
   local decision
-  decision="$(echo "$out" | python3 -c "import sys,json,re
+  decision="$(echo "$out" | python3 -c "import sys,json
 text=sys.stdin.read()
-# find last JSON object
-start=text.rfind('{')
-if start<0: print(''); raise SystemExit
-print(json.loads(text[start:]).get('decision',''))" 2>/dev/null || true)"
+dec=json.JSONDecoder()
+i=0
+decision=''
+while True:
+    j=text.find('{', i)
+    if j<0: break
+    try:
+        obj, _ = dec.raw_decode(text[j:])
+        if isinstance(obj, dict) and 'decision' in obj:
+            decision=obj.get('decision','')
+            break
+    except json.JSONDecodeError:
+        pass
+    i=j+1
+print(decision)" 2>/dev/null || true)"
 
   if [ "$code" -eq 0 ] && [ "$decision" = "pass" ]; then
     pass "clean scan → exit $code, decision=$decision"
@@ -131,11 +142,12 @@ test_scan_secret() {
   local tmp
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/kuro-e2e-secret.XXXXXX")"
   cat > "$tmp/.env" <<'EOF'
-AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+# Synthetic slack bot token — AWS docs EXAMPLE keys are allowlisted by gitleaks.
+SLACK_TOKEN=xoxb-123456789012-123456789012-abcdefghijklmnopqrstuvwx
 EOF
 
   set +e
-  out="$("$KURO_BIN" scan "$tmp" --json 2>&1)"
+  out="$("$KURO_BIN" scan --json "$tmp" 2>&1)"
   code=$?
   set -e
 
@@ -144,9 +156,21 @@ EOF
   local decision
   decision="$(echo "$out" | python3 -c "import sys,json
 text=sys.stdin.read()
-start=text.rfind('{')
-if start<0: print(''); raise SystemExit
-print(json.loads(text[start:]).get('decision',''))" 2>/dev/null || true)"
+dec=json.JSONDecoder()
+i=0
+decision=''
+while True:
+    j=text.find('{', i)
+    if j<0: break
+    try:
+        obj, _ = dec.raw_decode(text[j:])
+        if isinstance(obj, dict) and 'decision' in obj:
+            decision=obj.get('decision','')
+            break
+    except json.JSONDecodeError:
+        pass
+    i=j+1
+print(decision)" 2>/dev/null || true)"
 
   if [ "$code" -eq 1 ] && { [ "$decision" = "block" ] || [ "$decision" = "blocked" ]; }; then
     pass "secret scan → exit $code, decision=$decision"

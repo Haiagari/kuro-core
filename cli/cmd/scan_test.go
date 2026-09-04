@@ -175,3 +175,30 @@ func TestScanOutputSuccessExitCodeZero(t *testing.T) {
 		})
 	}
 }
+
+func TestReorderFlagsBeforeArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"flags first unchanged", []string{"--json", "./repo"}, []string{"--json", "./repo"}},
+		{"flag after path", []string{"./repo", "--json"}, []string{"--json", "./repo"}},
+		{"mixed", []string{"./repo", "--json", "--history"}, []string{"--json", "--history", "./repo"}},
+		{"double dash stops", []string{"./repo", "--", "--json"}, []string{"./repo", "--json"}},
+		{"empty", nil, []string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := reorderFlagsBeforeArgs(tt.in)
+			if len(got) != len(tt.want) {
+				t.Fatalf("len=%d want %d (%v vs %v)", len(got), len(tt.want), got, tt.want)
+			}
+			for i := range tt.want {
+				if got[i] != tt.want[i] {
+					t.Fatalf("got %v want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
