@@ -40,6 +40,12 @@ func (c *localCLIClient) Scan(dir, repo, commit, branch string) (bool, []proxySc
 		return false, nil, fmt.Errorf("kuro scan produced no JSON output: %s", msg)
 	}
 
+	return parseScanJSON(out)
+}
+
+// parseScanJSON maps kuro scan --json output to a proxy block decision.
+// pass/approved/ok → not blocked; block/blocked/review/deny → blocked.
+func parseScanJSON(out []byte) (blocked bool, findings []proxyScanFinding, err error) {
 	var result struct {
 		Decision string `json:"decision"`
 		Status   string `json:"status"`
@@ -56,7 +62,7 @@ func (c *localCLIClient) Scan(dir, repo, commit, branch string) (bool, []proxySc
 		return false, nil, fmt.Errorf("parse kuro scan JSON: %w (stdout=%q)", err, truncate(string(out), 200))
 	}
 
-	findings := make([]proxyScanFinding, 0, len(result.Findings))
+	findings = make([]proxyScanFinding, 0, len(result.Findings))
 	for _, f := range result.Findings {
 		findings = append(findings, proxyScanFinding{
 			File:        f.File,
