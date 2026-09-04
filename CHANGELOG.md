@@ -15,6 +15,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — [Semantic V
 - **Makefile targets**: `make proxy` runs local git-proxy; `make e2e-core` builds and runs Core-local E2E.
 
 ### Changed
+- **Semgrep offline local rules**: Core local scans embed a small high-signal ruleset (`cli/internal/orchestrator/rules/semgrep-core.yml`) and run `semgrep scan --config=/kuro-rules/...` instead of `--config=auto`, so Semgrep works with `--network=none` (required for Core scanner hardening / `make e2e-core`).
 - **Proxy happy path**: docs, `kuro help`, and `make proxy` prefer `./bin/kuro proxy` instead of `cd services/git-proxy && go run .`.
 - **Docs & CLI help aligned to Core positioning**: clone/install URLs now point to `Haiagari/kuro-core`; `kuro help` leads with local-first commands (`doctor`, `scan`, `fix`, `canary`, `attest`) and demotes server/Enterprise companion commands.
 - **Quickstart happy path**: doctor → scan → fix/canary → local git-proxy.

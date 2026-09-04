@@ -1,0 +1,63 @@
+# Kuro Core offline Semgrep ruleset — used with --network=none (no --config=auto).
+# Keep small and high-signal; Gitleaks covers most secret detectors.
+rules:
+  - id: kuro.generic.hardcoded-credential
+    message: Possible hardcoded credential or secret assigned in source
+    severity: ERROR
+    languages:
+      - generic
+    metadata:
+      category: security
+      confidence: MEDIUM
+      kuro: core-offline
+    patterns:
+      - pattern-regex: (?i)(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)\s*[=:]\s*['\"][^'\"]{8,}['\"]
+
+  - id: kuro.python.dangerous-eval
+    message: Use of eval() can lead to code injection
+    severity: ERROR
+    languages:
+      - python
+    metadata:
+      category: security
+      confidence: HIGH
+      kuro: core-offline
+    patterns:
+      - pattern: eval(...)
+
+  - id: kuro.javascript.dangerous-eval
+    message: Use of eval() can lead to code injection
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    metadata:
+      category: security
+      confidence: HIGH
+      kuro: core-offline
+    patterns:
+      - pattern: eval(...)
+
+  - id: kuro.python.insecure-ssl-verify
+    message: TLS certificate verification is disabled
+    severity: WARNING
+    languages:
+      - python
+    metadata:
+      category: security
+      confidence: HIGH
+      kuro: core-offline
+    patterns:
+      - pattern: verify=False
+
+  - id: kuro.generic.insecure-http-url
+    message: Hardcoded http:// URL may send sensitive data in cleartext
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      category: security
+      confidence: LOW
+      kuro: core-offline
+    patterns:
+      - pattern-regex: ['\"]http://(?!localhost|127\.0\.0\.1)[^'\"]+['\"]
