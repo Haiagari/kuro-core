@@ -592,7 +592,7 @@ func (h *ProxyHandler) handleReceivePack(w http.ResponseWriter, r *http.Request)
 		log.Printf("BLOCKED: %s - %v", repoPath, err)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprintf(w, "remote: KURO PIPELINE - PUSH BLOCKED\n")
+		fmt.Fprintf(w, "remote: KURO CORE - PUSH BLOCKED\n")
 		fmt.Fprintf(w, "remote:   %v\n", err)
 		fmt.Fprintf(w, "remote:\nremote: Unable to verify pushed refs. Fix and push again.\n")
 		return
@@ -618,14 +618,14 @@ func (h *ProxyHandler) handleReceivePack(w http.ResponseWriter, r *http.Request)
 		commitSHA = strings.Join(shas, ",")
 	}
 
-	// Call Kuro API — the Worker orchestrates the scanners.
+	// Scan via Core local CLI (SCAN_MODE=local) or Enterprise API (SCAN_MODE=api).
 	blocked, findings, _ := h.Kuro.Scan(scanHostDir, repoPath, commitSHA, branch)
 
 	if blocked {
 		log.Printf("BLOCKED: %s - %d findings", repoPath, len(findings))
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprintf(w, "remote: KURO PIPELINE - PUSH BLOCKED\n")
+		fmt.Fprintf(w, "remote: KURO CORE - PUSH BLOCKED\n")
 		for _, f := range findings {
 			if f.Description != "" {
 				fmt.Fprintf(w, "remote:   %s | %s | %s:%d - %s\n", f.Severity, f.Rule, f.File, f.Line, f.Description)
@@ -633,7 +633,7 @@ func (h *ProxyHandler) handleReceivePack(w http.ResponseWriter, r *http.Request)
 				fmt.Fprintf(w, "remote:   %s | %s | %s:%d\n", f.Severity, f.Rule, f.File, f.Line)
 			}
 		}
-		fmt.Fprintf(w, "remote:\nremote: Fix the issues above or verify Kuro service status and push again.\n")
+		fmt.Fprintf(w, "remote:\nremote: Fix the issues above or run `kuro doctor` and push again.\n")
 		return
 	}
 
@@ -680,7 +680,7 @@ func main() {
 	handler := &ProxyHandler{
 		Limiter: newRateLimiter(),
 		Git:     &defaultGitService{},
-		Kuro:    newCachedKuroClient(&defaultKuroClient{}),
+		Kuro:    selectScanClient(),
 	}
 
 	mux := http.NewServeMux()
@@ -704,7 +704,7 @@ func main() {
 		srv.Shutdown(context.Background())
 	}()
 
-	log.Printf("Kuro Git Proxy on %s -> %s", listenAddr, upstreamURL)
+	log.Printf("Kuro Core Git Proxy on %s -> %s (scan=%s)", listenAddr, upstreamURL, getEnv("SCAN_MODE", "local"))
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
