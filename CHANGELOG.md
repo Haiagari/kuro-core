@@ -7,6 +7,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — [Semantic V
 
 ## [Unreleased]
 
+### Fixed
+- `kuro scan PATH --json` now honors flags after the path (Go `flag` previously stopped at the first positional).
+- Core local e2e: parse the root scan JSON for `decision` (not nested finding objects); secret fixture uses a synthetic Slack bot token because AWS docs `EXAMPLE` keys are allowlisted by Gitleaks.
+
 ### Added
 - **`kuro proxy` CLI command**: first-class in-process local Git proxy (`./bin/kuro proxy`); server logic lives in importable `kuro/git-proxy/server` while `services/git-proxy` keeps a thin `main` for Docker/standalone.
 - **Core doctor checks**: `kuro doctor` now validates Container Runtime, Git, Scanner Images, Disk Space, and Kuro Binary (no Postgres/NATS/MinIO).

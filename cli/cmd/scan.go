@@ -38,6 +38,8 @@ func RunScan(args []string) {
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
+	// Go's flag package stops at the first non-flag; docs/examples use `scan PATH --json`.
+	args = reorderFlagsBeforeArgs(args)
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
@@ -156,6 +158,30 @@ func RunScan(args []string) {
 	if code := scanOutput(result, err, *jsonFlag, useTUI); code != 0 {
 		os.Exit(code)
 	}
+}
+
+
+// reorderFlagsBeforeArgs moves leading-dash tokens before positionals so
+// `kuro scan ./path --json` works the same as `kuro scan --json ./path`.
+// Scan flags today are all boolean / --flag=value forms.
+func reorderFlagsBeforeArgs(args []string) []string {
+	var flags, pos []string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--" {
+			pos = append(pos, args[i+1:]...)
+			break
+		}
+		if strings.HasPrefix(a, "-") {
+			flags = append(flags, a)
+			continue
+		}
+		pos = append(pos, a)
+	}
+	out := make([]string, 0, len(args))
+	out = append(out, flags...)
+	out = append(out, pos...)
+	return out
 }
 
 // scanOutput prints the scan result in the selected display mode and returns
