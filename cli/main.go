@@ -47,6 +47,8 @@ func main() {
 		cmd.RunAttest(os.Args[2:])
 	case "fix", "triage":
 		cmd.RunFix(os.Args[2:])
+	case "proxy":
+		cmd.RunProxy(os.Args[2:])
 	case "license":
 		cmd.RunLicense(os.Args[2:])
 	case "version":
@@ -89,8 +91,8 @@ func printUsage() {
 │                                                            │
 │  ┌─ LOCAL GIT PROXY ───────────────────────────────────┐   │
 │  │                                                     │   │
-│  │  Fail-closed pre-push gate on localhost:8000        │   │
-│  │  Run:  cd services/git-proxy && go run .            │   │
+│  │  proxy [--addr :8000] [--upstream URL]              │   │
+│  │    Fail-closed pre-push gate (default :8000)        │   │
 │  │  Then point a remote at http://localhost:8000/...   │   │
 │  │                                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
@@ -115,6 +117,7 @@ func printUsage() {
 │    kuro scan ./my-project --json                           │
 │    kuro fix ./my-project --dry-run                         │
 │    kuro canary generate --type aws --format env            │
+│    kuro proxy                                               │
 │                                                            │
 ╰────────────────────────────────────────────────────────────╯
 `))
