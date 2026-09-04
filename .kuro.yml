@@ -1,0 +1,17 @@
+# .kuro.yml — Kuro config for self-scanning
+#
+# This file configures how Kuro scans itself.
+# Suppressions are for false positives in documentation
+# (example code, config templates, etc. — not real secrets).
+
+ignored_paths:
+  # Documentation contains example API keys, tokens, and connection strings
+  # for illustrative purposes — not real credentials.
+  - "docs/"
+  - "evidence/"
+  - "scripts/"
+  - "README.md"
+
+  # Test files contain example secrets used for E2E testing
+  # (gitleaks test payloads, not real credentials)
+  - "tests/"

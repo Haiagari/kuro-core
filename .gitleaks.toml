@@ -1,0 +1,10 @@
+# Root .gitleaks.toml — allowed paths for test fixtures containing example secrets.
+
+# Test files use example secrets for E2E testing.
+# Scripts contain setup/demo placeholder values (${VAR:-default}), not real secrets.
+[allowlist]
+paths = [
+  "tests/",
+  "testdata/",
+  "scripts/",
+]

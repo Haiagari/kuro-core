@@ -1,0 +1,99 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment — NUNCA en imágenes
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token
+*.cred
+*.secret
+*credentials*
+id_*
+*.p12
+*.pfx
+*.jks
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*
+
+# Data (bind mounts, not in images)
+data/
+reports/
+*.db
+*.sqlite3
+
+# Docs & configs not needed at runtime
+docs/
+*.md
+!README.md
+
+# Frontend build
+.next/
+out/
+.turbo/
+node_modules/
+
+# Tests
+tests/
+.actrc
+act.txt
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Personal / config
+.opencode/
+.kuro/
+.agents/
+.ssh/
+
+# Logs
+*.log
+logs/
+tmp/
+temp/
+.tmp/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Backups
+*.backup
+*.bkp
+*.old
+
+# Ignorar screenshots locales (no deberían estar en imágenes)
+docs/images/

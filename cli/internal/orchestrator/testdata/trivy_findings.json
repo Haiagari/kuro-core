@@ -1,0 +1,35 @@
+{
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-1234",
+          "PkgName": "lodash",
+          "Severity": "CRITICAL",
+          "Title": "Prototype Pollution in lodash",
+          "InstalledVersion": "4.17.20"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-5678",
+          "PkgName": "express",
+          "Severity": "HIGH",
+          "Title": "Path Traversal in express",
+          "InstalledVersion": "4.18.1"
+        }
+      ]
+    },
+    {
+      "Target": "go.mod",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-9012",
+          "PkgName": "golang.org/x/net",
+          "Severity": "MEDIUM",
+          "Title": "HTTP/2 Rapid Reset",
+          "InstalledVersion": "0.17.0"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      api-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: "gomod"
+    directory: "/worker"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      worker-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: "gomod"
+    directory: "/notifications"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      notifier-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: "gomod"
+    directory: "/git-proxy"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      git-proxy-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/dashboard"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      dashboard-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

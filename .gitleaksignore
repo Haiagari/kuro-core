@@ -1,0 +1,24 @@
+# False positives - Example code in documentation/UI
+
+# Dashboard example snippets (showing vulnerable code for demo)
+dashboard/components/findings/findings-data-table.tsx:generic-api-key:288
+
+# Backup script - env var reference "${DB_PASSWORD:-kuro_pg_dev}", not a hardcoded secret
+deploy/scripts/backup.sh:generic-secret:25
+deploy/scripts/backup.sh:generic-secret:27
+
+# README curl examples with placeholder API keys
+README.md:curl-auth-header:178
+README.md:curl-auth-header:187
+
+# Documentation examples
+docs/API.md:curl-auth-header:*
+docs/DEPLOYMENT.md:generic-api-key:*
+
+# Test fixtures (intentional fake secrets for scanner tests)
+worker/scanners/testdata/repo-with-secrets/hardcoded.py:generic-secret:*
+
+# Test/example keys (false positives)
+services/api/handlers/auth_test.go:generic-api-key:74
+scripts/setup.sh:curl-auth-header:500
+tests/e2e-proxy.sh:generic-api-key:178

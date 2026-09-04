@@ -1,0 +1,26 @@
+[
+  {
+    "check_id": "CKV_DOCKER_1",
+    "check_name": "Ensure COPY is used instead of ADD in Dockerfiles",
+    "file_path": "/src/Dockerfile",
+    "file_line_range": [3, 10],
+    "severity": "HIGH",
+    "description": "COPY is preferred over ADD for copying local files"
+  },
+  {
+    "check_id": "CKV_DOCKER_2",
+    "check_name": "Ensure HEALTHCHECK instruction is defined",
+    "file_path": "/src/Dockerfile",
+    "file_line_range": [25, 25],
+    "severity": "MEDIUM",
+    "description": "HEALTHCHECK is not defined in Dockerfile"
+  },
+  {
+    "check_id": "CKV_AWS_1",
+    "check_name": "Ensure IAM policies are attached only to groups or roles",
+    "file_path": "/src/main.tf",
+    "file_line_range": [100, 110],
+    "severity": "CRITICAL",
+    "description": "IAM policy directly attached to user"
+  }
+]
