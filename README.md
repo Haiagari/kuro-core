@@ -20,7 +20,7 @@ kuro doctor && kuro scan ./my-project
 ---
 
 <p align="center">
-  <img src="docs/diagrams/architecture-darkmode.svg" alt="Kuro Core Architecture" width="100%">
+  <img src="docs/diagrams/architecture-darkmode.png" alt="Kuro Core Architecture" width="100%">
 </p>
 
 ---
