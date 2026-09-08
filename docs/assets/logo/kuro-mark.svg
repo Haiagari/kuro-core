@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="kuro-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="kuro-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+    <filter id="mark-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="3.5" flood-color="#00f2fe" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background container for standalone rendering -->
+  <rect width="128" height="128" rx="28" fill="#07090e"/>
+
+  <!-- Enso Ring: High-precision brushed arc with cyber chamfers -->
+  <!-- Sweeps ~285 degrees from bottom-right (98, 82) around left to top-right (98, 46) -->
+  <path d="M 98 44 A 48 48 0 1 0 98 84 L 90 78 A 38 38 0 1 1 90 50 Z" 
+        fill="url(#kuro-cyan)" filter="url(#mark-glow)"/>
+
+  <!-- Torii Kasagi (Upper Gate Beam / Lintel) -->
+  <polygon points="32,35 96,35 90,43 38,43" fill="#ffffff"/>
+
+  <!-- Torii Hashira / Left Pillar / K Stem -->
+  <polygon points="38,43 48,43 48,93 38,93" fill="#ffffff"/>
+
+  <!-- Upper K Diagonal Blade / Gate Portal -->
+  <polygon points="48,56 78,36 86,44 56,64" fill="#ffffff"/>
+
+  <!-- Lower K Diagonal Blade (Crimson Gate Bar) -->
+  <polygon points="56,64 86,86 78,94 48,72" fill="url(#kuro-red)"/>
+
+  <!-- Central Core Node: Security Gate Aperture -->
+  <polygon points="65,58 71,64 65,70 59,64" fill="#00f2fe" filter="url(#mark-glow)"/>
+</svg>

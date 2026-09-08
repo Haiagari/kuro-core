@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <!-- Standalone background -->
+  <rect width="128" height="128" rx="28" fill="#07090e"/>
+
+  <!-- Enso Ring -->
+  <path d="M 98 44 A 48 48 0 1 0 98 84 L 90 78 A 38 38 0 1 1 90 50 Z" fill="#ffffff"/>
+
+  <!-- Torii Lintel -->
+  <polygon points="32,35 96,35 90,43 38,43" fill="#ffffff"/>
+
+  <!-- Left Pillar -->
+  <polygon points="38,43 48,43 48,93 38,93" fill="#ffffff"/>
+
+  <!-- Upper Diagonal -->
+  <polygon points="48,56 78,36 86,44 56,64" fill="#ffffff"/>
+
+  <!-- Lower Diagonal -->
+  <polygon points="56,64 86,86 78,94 48,72" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Central Core Node -->
+  <polygon points="65,58 71,64 65,70 59,64" fill="#ffffff"/>
+</svg>
