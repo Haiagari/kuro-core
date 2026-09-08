@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,11 +8,12 @@ import (
 )
 
 // RunSetup handles the `kuro setup <component>` command.
-// Components: tls, ollama, runner, nats, firewall
+// Components in Core: hooks, images.
+// Server components (tls, ollama, runner, nats, firewall) belong to Kuro Enterprise.
 func RunSetup(args []string) {
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "Usage: kuro setup <component>")
-		fmt.Fprintln(os.Stderr, "Components: tls, ollama, runner, nats, firewall, hooks")
+		fmt.Fprintln(os.Stderr, "Components: hooks, images (server components belong to Kuro Enterprise)")
 		os.Exit(1)
 	}
 
@@ -21,66 +21,21 @@ func RunSetup(args []string) {
 	rest := args[1:]
 
 	switch component {
-	case "tls":
-		setupTLS(rest)
-	case "ollama":
-		setupOllama(rest)
-	case "runner":
-		setupRunner(rest)
-	case "nats":
-		setupNATS(rest)
-	case "firewall":
-		setupFirewall(rest)
+	case "tls", "ollama", "runner", "nats", "firewall":
+		fmt.Fprintf(os.Stderr, "Error: component %q belongs to Kuro Enterprise.\n", component)
+		fmt.Fprintln(os.Stderr, "Kuro Core is a local-first, standalone gate and does not configure server daemons.")
+		fmt.Fprintln(os.Stderr, "For Enterprise server setups, see: https://github.com/Haiagari/kuro-enterprise")
+		fmt.Fprintln(os.Stderr, "Supported Core components: hooks, images")
+		os.Exit(1)
 	case "hooks":
 		setupHooks(rest)
 	case "images":
 		setupImages(rest)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown component: %q\n", component)
-		fmt.Fprintln(os.Stderr, "Components: tls, ollama, runner, nats, firewall, hooks, images")
+		fmt.Fprintln(os.Stderr, "Components: hooks, images (server components belong to Kuro Enterprise)")
 		os.Exit(1)
 	}
-}
-
-func setupTLS(args []string) {
-	fs := flag.NewFlagSet("setup tls", flag.ContinueOnError)
-	disable := fs.Bool("disable", false, "Disable TLS")
-	status := fs.Bool("status", false, "Show TLS status")
-	_ = fs.Parse(args)
-
-	script := "scripts/setup-tls.sh"
-	if *disable {
-		runScript(script, "--disable")
-	} else if *status {
-		runScript(script, "--status")
-	} else {
-		runScript(script)
-	}
-}
-
-func setupOllama(args []string) {
-	fs := flag.NewFlagSet("setup ollama", flag.ContinueOnError)
-	force := fs.Bool("f", false, "Force reinstall")
-	_ = fs.Parse(args)
-
-	script := "scripts/setup-ollama.sh"
-	if *force {
-		runScript(script, "-f")
-	} else {
-		runScript(script)
-	}
-}
-
-func setupRunner(args []string) {
-	runScript("scripts/setup-runner.sh")
-}
-
-func setupNATS(args []string) {
-	runScript("scripts/setup-nats-streams.sh")
-}
-
-func setupFirewall(args []string) {
-	runScript("scripts/setup-firewall.sh")
 }
 
 func setupHooks(args []string) {
@@ -91,15 +46,15 @@ func setupImages(args []string) {
 	_ = strings.Join(args, " ") // silence unused warning
 
 	// Scanner images (same pinned versions as the local orchestrator)
-	images := []struct{
+	images := []struct {
 		Name string
 		Tag  string
 		Full string
 	}{
-		{"Gitleaks",   "zricethezav/gitleaks",   "docker.io/zricethezav/gitleaks:v8.30.1"},
-		{"Semgrep",    "semgrep/semgrep",        "docker.io/semgrep/semgrep:1.165.0"},
-		{"Trivy",      "aquasec/trivy",          "docker.io/aquasec/trivy:0.57.0"},
-		{"Checkov",    "bridgecrew/checkov",     "docker.io/bridgecrew/checkov:3.2.400"},
+		{"Gitleaks", "zricethezav/gitleaks", "docker.io/zricethezav/gitleaks:v8.30.1"},
+		{"Semgrep", "semgrep/semgrep", "docker.io/semgrep/semgrep:1.165.0"},
+		{"Trivy", "aquasec/trivy", "docker.io/aquasec/trivy:0.57.0"},
+		{"Checkov", "bridgecrew/checkov", "docker.io/bridgecrew/checkov:3.2.400"},
 	}
 
 	// Detect runtime
