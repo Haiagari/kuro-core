@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (c) 2026 Sam Bleed
 #
-# Kuro Core v0.1.0 — Makefile (Standalone CLI & Local Proxy)
+# Kuro Core v0.1.1 — Makefile (Standalone CLI & Local Proxy)
 # Usage: make <target>
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ proxy: build
 	@echo "🚪 Starting local git-proxy on :8000 via ./bin/kuro proxy..."
 	@echo "   Tip: SCAN_MODE=local KURO_BIN=$$(pwd)/bin/kuro (default local scan)"
 	@echo "        SCAN_MODE=api for Enterprise API path"
-	KURO_BIN=$$(pwd)/$(BINARY) $(BINARY) proxy
+	KURO_BIN=$(CURDIR)/$(BINARY) $(BINARY) proxy
 
 e2e-core: build
 	@echo "🧪 Running Core-local E2E (no Postgres/NATS/API)..."

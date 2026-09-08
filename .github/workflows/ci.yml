@@ -28,7 +28,7 @@ jobs:
       - name: Verify Go Workspace & Modules
         run: |
           go work sync
-          git diff --exit-code go.work.sum || true
+          git diff --exit-code go.work.sum
 
       - name: Code Linting (vet)
         run: make lint

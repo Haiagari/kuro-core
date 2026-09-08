@@ -30,26 +30,29 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-info()  { printf "${GREEN}%s${NC}\n" "$*"; }
-warn()  { printf "${YELLOW}%s${NC}\n" "$*"; }
-error() { printf "${RED}%s${NC}\n" "$*"; exit 1; }
+info() { printf "${GREEN}%s${NC}\n" "$*"; }
+warn() { printf "${YELLOW}%s${NC}\n" "$*"; }
+error() {
+  printf "${RED}%s${NC}\n" "$*"
+  exit 1
+}
 
 # ── Detect OS/arch ──────────────────────────────────────────
 detect_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
   case "$os" in
-    linux)  echo "linux" ;;
-    darwin) echo "darwin" ;;
-    *)      error "Unsupported OS: $os (only linux and darwin are supported)" ;;
+  linux) echo "linux" ;;
+  darwin) echo "darwin" ;;
+  *) error "Unsupported OS: $os (only linux and darwin are supported)" ;;
   esac
 }
 
 detect_arch() {
   arch=$(uname -m)
   case "$arch" in
-    x86_64|amd64) echo "amd64" ;;
-    aarch64|arm64) echo "arm64" ;;
-    *)            error "Unsupported architecture: $arch (only amd64 and arm64 are supported)" ;;
+  x86_64 | amd64) echo "amd64" ;;
+  aarch64 | arm64) echo "arm64" ;;
+  *) error "Unsupported architecture: $arch (only amd64 and arm64 are supported)" ;;
   esac
 }
 
@@ -123,9 +126,18 @@ main() {
 
   # ── Verify checksum ──────────────────────────────────────
   printf "  Verifying checksum ... "
-  expected=$(grep "${archive}" "${tmpdir}/${checksum_file}" | awk '{print $1}')
+  # Match the complete filename so similarly named archives cannot be selected.
+  expected=$(awk -v file="$archive" '$2 == file || $2 == "*" file { print $1; exit }' "${tmpdir}/${checksum_file}")
   if [ -z "$expected" ]; then
     error "checksum for ${archive} not found in ${checksum_file}"
+  fi
+  case "$expected" in
+  *[!0123456789abcdefABCDEF]*)
+    error "invalid SHA-256 checksum for ${archive}"
+    ;;
+  esac
+  if [ "${#expected}" -ne 64 ]; then
+    error "invalid SHA-256 checksum length for ${archive}"
   fi
 
   if command -v sha256sum >/dev/null 2>&1; then
