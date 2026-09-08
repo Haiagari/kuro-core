@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -185,12 +186,34 @@ type scanResult struct {
 	elapsed  time.Duration
 }
 
-// Run executes the scanners in Docker/Podman containers in parallel.
+// Run executes the scanners in Docker/Podman containers with bounded concurrency.
 func (a *LocalAdapter) Run(ctx context.Context, target string, scanners []string) (RunResult, error) {
 	results := make(chan scanResult, len(scanners))
 
+	// Limit concurrent container executions to avoid saturating CPU, memory, and container engine.
+	// Default to 2 concurrent containers (optimal balance for developer machines without resource thrashing),
+	// or allow KURO_MAX_CONCURRENCY env var.
+	maxConcurrency := 2
+	if envC := os.Getenv("KURO_MAX_CONCURRENCY"); envC != "" {
+		if n, err := strconv.Atoi(envC); err == nil && n > 0 {
+			maxConcurrency = n
+		}
+	}
+	sem := make(chan struct{}, maxConcurrency)
+
 	for _, sc := range scanners {
 		go func(scanner string) {
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				results <- scanResult{
+					name: scanner,
+					err:  ctx.Err(),
+				}
+				return
+			}
+
 			// Create per-scanner timeout context.
 			// History scans need more time (full git log vs working tree).
 			timeout := 5 * time.Minute

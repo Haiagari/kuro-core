@@ -418,3 +418,18 @@ func TestLocalAdapter_RunFailsClosedOnError(t *testing.T) {
 		t.Fatal("expected LocalAdapter.Run to fail-closed with an error when scanner runtime fails, got nil")
 	}
 }
+
+func TestLocalAdapter_RunHonorsContextCancellation(t *testing.T) {
+	adapter := &LocalAdapter{
+		runtime: "nonexistent-kuro-runtime-bin",
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	target := t.TempDir()
+	_, err := adapter.Run(ctx, target, []string{"gitleaks", "semgrep"})
+	if err == nil {
+		t.Fatal("expected error on canceled context, got nil")
+	}
+}
