@@ -112,25 +112,35 @@ type CacheCommitter interface {
 type Orchestrator struct {
 	adapter   Adapter
 	verbose   bool
+	policy    *Policy
 	eventsCh  chan<- PhaseEvent // nil in text/JSON mode, non-nil for TUI
 }
 
-// New creates an orchestrator with the given adapter.
+// New creates an orchestrator with the given adapter and default policy.
 func New(adapter Adapter, verbose bool) *Orchestrator {
+	pol, _ := LoadPolicy("")
 	return &Orchestrator{
 		adapter:  adapter,
 		verbose:  verbose,
+		policy:   pol,
 		eventsCh: nil,
 	}
 }
 
 // NewWithEvents creates an orchestrator that sends phase events to eventsCh.
 func NewWithEvents(adapter Adapter, verbose bool, eventsCh chan<- PhaseEvent) *Orchestrator {
+	pol, _ := LoadPolicy("")
 	return &Orchestrator{
 		adapter:  adapter,
 		verbose:  verbose,
+		policy:   pol,
 		eventsCh: eventsCh,
 	}
+}
+
+// SetPolicy sets a custom security policy for the orchestrator.
+func (o *Orchestrator) SetPolicy(p *Policy) {
+	o.policy = p
 }
 
 // Run executes the complete scan pipeline.
@@ -224,6 +234,10 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 
 // analyze applies the Policy Engine rules to the findings.
 func (o *Orchestrator) analyze(findings []Finding) string {
+	if o.policy != nil {
+		return o.policy.Evaluate(findings)
+	}
+
 	hasCritical := false
 	hasHigh := false
 

@@ -280,9 +280,9 @@ func TestCountBySeverity(t *testing.T) {
 func TestRunSuccess(t *testing.T) {
 	adapter := &mockAdapter{
 		name:     "local",
-		scopeRes: []string{"gitleaks"},
+		scopeRes: []string{"semgrep"},
 		runRes: []Finding{
-			{Scanner: "gitleaks", Severity: "MEDIUM", Title: "test finding"},
+			{Scanner: "semgrep", Severity: "MEDIUM", Title: "test finding"},
 		},
 	}
 	o := New(adapter, false)

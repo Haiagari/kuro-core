@@ -1,0 +1,51 @@
+{
+  "name": "kuro-default-policy",
+  "version": "1.1.0",
+  "rules": [
+    {
+      "scanner": "gitleaks",
+      "action": "BLOCK",
+      "reason": "Hardcoded credentials block the merge"
+    },
+    {
+      "scanner": "trufflehog",
+      "action": "BLOCK",
+      "reason": "TruffleHog verified secrets block immediately"
+    },
+    {
+      "severity": "CRITICAL",
+      "action": "BLOCK",
+      "reason": "Critical vulnerabilities block immediately"
+    },
+    {
+      "severity": "HIGH",
+      "threshold": 3,
+      "action": "MANUAL_REVIEW",
+      "reason": "Three or more high severity findings require manual review"
+    },
+    {
+      "scanner": "checkov",
+      "action": "BLOCK",
+      "file_patterns": ["*.tf", "*.tfvars", "k8s/**", "*.yaml", "*.yml", "Dockerfile"],
+      "reason": "Checkov runs only when IaC or Docker files change"
+    },
+    {
+      "scanner": "trivy",
+      "action": "BLOCK",
+      "file_patterns": ["go.mod", "go.sum", "package.json", "package-lock.json", "requirements.txt", "Gemfile", "Gemfile.lock"],
+      "reason": "Trivy runs only when dependency manifests change"
+    },
+    {
+      "scanner": "grype",
+      "action": "MANUAL_REVIEW",
+      "severity": "HIGH",
+      "file_patterns": ["go.mod", "go.sum", "package.json", "package-lock.json", "requirements.txt", "Gemfile", "Gemfile.lock"],
+      "reason": "Grype scans dependency vulnerabilities when manifests change"
+    },
+    {
+      "scanner": "syft",
+      "action": "MANUAL_REVIEW",
+      "reason": "Syft generates SBOM with component inventory"
+    }
+  ]
+}
