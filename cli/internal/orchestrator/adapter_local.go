@@ -3,6 +3,7 @@ package orchestrator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -230,6 +231,7 @@ func (a *LocalAdapter) Run(ctx context.Context, target string, scanners []string
 
 	var allFindings []Finding
 	var timings []ScannerTiming
+	var scanErrors []error
 	for i := 0; i < len(scanners); i++ {
 		r := <-results
 
@@ -239,10 +241,9 @@ func (a *LocalAdapter) Run(ctx context.Context, target string, scanners []string
 		}
 
 		if r.err != nil {
-			if !isSkipError(r.err) {
-				fmt.Fprintf(os.Stderr, "%s %s... %s (%.1fs)\n", prefix, r.name, r.err, r.elapsed.Seconds())
-			}
+			fmt.Fprintf(os.Stderr, "%s %s... error: %v (%.1fs)\n", prefix, r.name, r.err, r.elapsed.Seconds())
 			timings = append(timings, ScannerTiming{Name: r.name, Findings: 0, Duration: r.elapsed})
+			scanErrors = append(scanErrors, fmt.Errorf("%s: %w", r.name, r.err))
 			continue
 		}
 
@@ -251,15 +252,9 @@ func (a *LocalAdapter) Run(ctx context.Context, target string, scanners []string
 		allFindings = append(allFindings, r.findings...)
 	}
 
-	return RunResult{Findings: allFindings, Timings: timings}, nil
-}
-
-// isSkipError returns true for expected scanner errors that should not be
-// printed as warnings (e.g. "no output", "no applicable files").
-func isSkipError(err error) bool {
-	if err == nil {
-		return false
+	if len(scanErrors) > 0 {
+		return RunResult{Findings: allFindings, Timings: timings}, errors.Join(scanErrors...)
 	}
-	msg := err.Error()
-	return strings.Contains(msg, "no output") || strings.Contains(msg, "produced no output")
+
+	return RunResult{Findings: allFindings, Timings: timings}, nil
 }

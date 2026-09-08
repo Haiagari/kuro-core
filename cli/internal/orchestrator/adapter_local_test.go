@@ -2,6 +2,7 @@ package orchestrator
 
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -404,4 +405,16 @@ func TestParseVariousEdgeCases(t *testing.T) {
 			t.Logf("parseGitleaksOutput correctly rejected object: %v", err)
 		}
 	})
+}
+
+func TestLocalAdapter_RunFailsClosedOnError(t *testing.T) {
+	adapter := &LocalAdapter{
+		runtime: "nonexistent-kuro-runtime-bin",
+	}
+
+	target := t.TempDir()
+	_, err := adapter.Run(context.Background(), target, []string{"gitleaks"})
+	if err == nil {
+		t.Fatal("expected LocalAdapter.Run to fail-closed with an error when scanner runtime fails, got nil")
+	}
 }

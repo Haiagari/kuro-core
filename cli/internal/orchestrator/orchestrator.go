@@ -143,6 +143,7 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 	if err != nil {
 		o.reportPhase(PhaseFetch, "fail", err.Error())
 		result.Status = "failed"
+		result.Decision = "block"
 		return result, fmt.Errorf("fetch failed: %w", err)
 	}
 	o.reportPhase(PhaseFetch, "done", fmt.Sprintf("Target ready (%s)", truncate(fetchID, 40)))
@@ -153,6 +154,7 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 	if err != nil {
 		o.reportPhase(PhaseScope, "fail", err.Error())
 		result.Status = "failed"
+		result.Decision = "block"
 		return result, fmt.Errorf("scope failed: %w", err)
 	}
 	if len(scanners) == 0 {
@@ -167,6 +169,7 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 	if err != nil {
 		o.reportPhase(PhaseScan, "fail", err.Error())
 		result.Status = "failed"
+		result.Decision = "block"
 		return result, fmt.Errorf("scan failed: %w", err)
 	}
 	result.Findings = runResult.Findings

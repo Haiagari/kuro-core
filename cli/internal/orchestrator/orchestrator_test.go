@@ -348,9 +348,15 @@ func TestRunScanFailure(t *testing.T) {
 		runErr:   context.DeadlineExceeded,
 	}
 	o := New(adapter, false)
-	_, err := o.Run(context.Background(), "/tmp/test")
+	res, err := o.Run(context.Background(), "/tmp/test")
 	if err == nil {
 		t.Fatal("expected error from scan failure")
+	}
+	if res.Decision != "block" {
+		t.Errorf("expected decision 'block', got %q", res.Decision)
+	}
+	if res.Status != "failed" {
+		t.Errorf("expected status 'failed', got %q", res.Status)
 	}
 }
 
