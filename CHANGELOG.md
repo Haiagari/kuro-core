@@ -9,8 +9,15 @@ Repository: [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core)
 
 ## [Unreleased]
 
+### Added
+- **Fail-Closed on Scanner Errors**: Enforce fail-closed security architecture when local scanner containers fail, time out, or produce unparsable output; joined errors strictly transition scan decision to `block` and exit code `1`.
+- **Scanner Concurrency Throttling**: Bounded worker pool semaphore limiting concurrent scanner containers (default: 2, tunable via `KURO_MAX_CONCURRENCY`) to prevent workstation CPU and memory starvation.
+- **Differential File Cache Lifecycle**: Transactional caching committed only on clean scans (`decision: pass`). If all files in scope are cached and clean, scan short-circuits instantly. Added `--no-cache` CLI flag and `KURO_NO_CACHE` environment variable.
+- **Policy Engine Integration**: Gate policy evaluated dynamically via embedded `rules/default-policy.json` (overridable via `KURO_POLICY_PATH`), evaluating severity thresholds and scanner-specific rules instead of hardcoded logic.
+- **Clean Enterprise Command Guidance**: `kuro up`, `kuro deploy`, and enterprise `kuro setup` subcommands provide clear guidance and documentation links to `Haiagari/kuro-enterprise` rather than failing on missing docker-compose stacks.
+
 ### Docs
-- Complete Core v0.1.1 documentation pass: README, QUICKSTART, AGENTS, CONTRIBUTING, SECURITY, docs/{API,ARCHITECTURE,ATTESTATION,SCANNER-ARCHITECTURE}, scripts/README, tests/README, and related pointers — aligned to local-first Core (no Enterprise-as-default), install URLs, exit codes, proxy/`SCAN_MODE`, Semgrep embedded rules, and Core vs Enterprise E2E.
+- Updated README, QUICKSTART, and docs (`ARCHITECTURE.md`, `SCANNER-ARCHITECTURE.md`, `API.md`) reflecting fail-closed execution, concurrency limits, differential cache flags, and the embedded policy engine.
 
 ---
 

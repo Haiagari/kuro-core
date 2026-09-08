@@ -62,6 +62,7 @@ docker|podman run --rm
 | `--cap-drop=ALL` | Drop Linux capabilities |
 | `no-new-privileges` | Block privilege escalation |
 | `--memory=512m` / `--cpus=1.0` | Resource caps per container |
+| Concurrency semaphore | Worker pool limits active scanner containers (default 2, `KURO_MAX_CONCURRENCY`) |
 | `:ro,Z` mounts | Read-only source (SELinux-friendly). TruffleHog history uses `:Z` (needs write for cache) |
 
 **Implication:** tools that expect network at scan time must be configured for offline use (see Semgrep & Trivy below).
@@ -119,9 +120,10 @@ Source of truth for rule content: `cli/internal/orchestrator/rules/semgrep-core.
 
 From `Scope` / `Run`:
 
-- Parallel goroutines per selected scanner.
+- **Throttled execution:** Scanners run across goroutines governed by a counting semaphore (default concurrency: 2 containers, configurable via `KURO_MAX_CONCURRENCY`).
+- **Fail-closed resilience:** Scanners that fail unexpectedly (abnormal container termination, OOM, timeout) return errors collected via `errors.Join`. They never silently default to zero findings.
+- **Differential cache lifecycle:** Scanned file hashes are maintained under `$HOME/.kuro/cache`. Caches are committed exclusively after clean scans (`decision == "pass"`). If all files in scope are already cached, the run skips container execution entirely. Use `--no-cache` (or `KURO_NO_CACHE=1`) to bypass.
 - Progress lines on stderr: `├─ gitleaks... N findings (t.s)`.
-- File cache under `$HOME/.kuro/cache` can skip unchanged files for stats (best-effort).
 
 ---
 
@@ -129,7 +131,7 @@ From `Scope` / `Run`:
 
 1. **Parse** — tool-specific JSON → unified `Finding` structs.
 2. **Dedup** — SHA-256 over `scanner + rule_id + file_path + line_number`; Jaccard similarity collapses near-duplicates.
-3. **Decide** — `deploy/policies/default-policy.json`.
+3. **Decide** — Evaluated via `PolicyEngine` against embedded `rules/default-policy.json` (or external file via `KURO_POLICY_PATH`).
 4. **Report** — TUI / text / JSON + exit codes (`0` / `2` / `1`).
 
 JSON shape and exit codes: [API.md](API.md).

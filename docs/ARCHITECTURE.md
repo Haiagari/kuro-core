@@ -41,9 +41,9 @@ Related: [SCANNER-ARCHITECTURE.md](SCANNER-ARCHITECTURE.md) · [API.md](API.md) 
 |---|---|---|
 | CLI entry | `cli/main.go`, `cli/cmd/*` | Subcommands, exit codes, help |
 | Orchestrator | `cli/internal/orchestrator` | Fetch → scope → scan → analyze → decide → report |
-| Local adapter | `adapter_local.go`, `container.go`, `scanners.go` | Containerized scanners |
+| Local adapter | `adapter_local.go`, `container.go`, `scanners.go` | Containerized scanners with bounded concurrency |
 | Semgrep rules | `cli/internal/orchestrator/rules/semgrep-core.yml` (embedded) | Offline SAST under `--network=none` |
-| Policy | `deploy/policies/default-policy.json` | Gate decisions |
+| Policy | `cli/internal/orchestrator/rules/default-policy.json` (embedded) | Gate decisions (overridable via `KURO_POLICY_PATH`) |
 | Proxy library | `kuro/git-proxy/server` | Smart-HTTP pre-push gate |
 | Proxy CLI | `cli/cmd/proxy.go` → `kuro proxy` | Preferred runtime |
 | Standalone proxy | `services/git-proxy` | Docker / thin `main` for images |
@@ -73,11 +73,15 @@ Default (working tree):
 History mode (`kuro scan --history`):
 - `gitleaks-history` + `trufflehog-history` only (longer timeouts).
 
-Optional file-change cache under `$HOME/.kuro/cache`.
+**Differential file cache:**
+- Fingerprints maintained under `$HOME/.kuro/cache`.
+- Only committed when a scan passes (`decision == "pass"`). If all files are cached and clean, the scan short-circuits with an immediate pass.
+- Bypassed with `--no-cache` or `KURO_NO_CACHE=1`.
 
 ### 3. Scan
-- Parallel container runs via `runContainer`.
-- Hardening flags (see [SCANNER-ARCHITECTURE.md](SCANNER-ARCHITECTURE.md)).
+- Bounded worker pool semaphore (default 2 parallel containers, configurable via `KURO_MAX_CONCURRENCY`) to prevent host resource starvation.
+- Hardening flags (`--network=none`, `--cap-drop=ALL`, `no-new-privileges`, `--memory=512m`, `--cpus=1.0`).
+- **Fail-closed execution:** container crashes, non-zero exits without parsable outputs, and timeouts strictly return aggregated errors (`errors.Join`), forcing `decision = "block"` and `status = "failed"`.
 - Per-scanner timeout: 5m (15m in history mode). Overall CLI context ~35m.
 
 ### 4. Analyze
@@ -86,7 +90,8 @@ Optional file-change cache under `$HOME/.kuro/cache`.
 - Aggregate severity counts.
 
 ### 5. Decide
-- Evaluate against static JSON policy (`deploy/policies/default-policy.json`).
+- Evaluated by `PolicyEngine` against embedded `rules/default-policy.json` (or external file specified in `KURO_POLICY_PATH`).
+- Checks severity threshold limits and scanner-specific rules (e.g. zero tolerance for Gitleaks secrets).
 - Decisions: `pass` | `review` | `block`.
 
 ### 6. Report

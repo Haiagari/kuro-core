@@ -83,8 +83,10 @@ echo $?   # expect 0 on pass
 - Interactive TUI on a TTY (unless `--json`).
 - JSON includes top-level `"decision": "pass"`.
 - Exit code `0`.
+- **Differential cache:** Clean scans commit file fingerprints to `$HOME/.kuro/cache`. Subsequent scans with zero modified files bypass scanning and pass instantaneously. Use `--no-cache` (or `KURO_NO_CACHE=1`) to force a fresh scan.
+- **Resource protection:** Container scanners are throttled by a concurrency worker pool (default: 2 containers, tunable via `KURO_MAX_CONCURRENCY`) to prevent overloading system resources.
 
-**Pitfall:** First scan may be slow while images pull asynchronously. Re-run after images are cached. Semgrep does **not** use `--config=auto`; Core embeds `semgrep-core.yml` so it works offline under `--network=none`.
+**Pitfall:** First scan may be slow while images pull asynchronously. Re-run after images are cached. Semgrep does **not** use `--config=auto`; Core embeds `semgrep-core.yml` so it works offline under `--network=none`. Any container failure or timeout strictly causes a fail-closed block (`exit 1`).
 
 ---
 

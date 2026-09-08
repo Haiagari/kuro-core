@@ -25,17 +25,26 @@ Applies to TUI, text, and `--json` modes (`decision_exit.go`, `scanOutput`).
 ## `kuro scan`
 
 ```bash
-kuro scan <path>|<url> [--json] [--history] [--tui] [--remote]
+kuro scan <path>|<url> [--json] [--no-cache] [--history] [--tui] [--remote]
 ```
 
 | Flag | Meaning |
 |---|---|
 | `--json` | Machine-readable JSON on stdout (no TUI) |
+| `--no-cache` | Bypass differential cache and force full scan |
 | `--history` | Full git history scanners (local only) |
 | `--tui` | Force TUI; auto-enabled on TTY when not `--json` |
 | `--remote` | Force remote adapter (needs API key — Enterprise companion) |
 
 **Important:** flags may appear **after** the path (`kuro scan ./proj --json`). Core reorders argv so Go’s `flag` parser accepts this (v0.1.1).
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `KURO_NO_CACHE` | `false` | When set to `1` or `true`, disables differential file caching |
+| `KURO_MAX_CONCURRENCY` | `2` | Maximum concurrent scanner containers running simultaneously |
+| `KURO_POLICY_PATH` | Embedded default | Path to custom policy JSON file |
 
 ### Local vs remote
 

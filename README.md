@@ -51,6 +51,10 @@ This repository is **Core only**. Server HTTP APIs and multi-tenant dashboards a
 ## Features
 
 - **Multi-scanner fleet** — Gitleaks, Semgrep (embedded offline ruleset), Trivy, Checkov in hardened containers (`--network=none`, `--cap-drop=ALL`, `no-new-privileges`).
+- **Resource-throttled execution** — Worker semaphore limits concurrent scanner containers (default: 2, tunable via `KURO_MAX_CONCURRENCY`) to prevent workstation CPU/memory thrashing.
+- **Fail-closed security gate** — Container crashes, timeouts, and unhandled tool errors strictly block (`exit 1`); no silent passes on container failure.
+- **Smart differential caching** — Fast incremental scans via `$HOME/.kuro/cache`; committed only on clean scans (`decision: pass`) and bypassable with `--no-cache`.
+- **Embedded policy engine** — Evaluates finding severities and scanner rules dynamically against embedded `default-policy.json` (customizable via `KURO_POLICY_PATH`).
 - **Fail-closed Git proxy** — `kuro proxy` on `:8000` blocks leaking pushes before they reach GitHub/GitLab.
 - **Interactive remediation** — `kuro fix` extracts hardcoded secrets to env vars (`--dry-run`, `--auto`).
 - **Canary deception** — `kuro canary generate|inject|verify|list` for honeypot credentials.
@@ -135,7 +139,7 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · scanners: [docs/SCA
 
 ```bash
 kuro doctor [--json]
-kuro scan <path> [--json] [--history] [--tui]   # --remote needs Enterprise API key
+kuro scan <path> [--json] [--no-cache] [--history] [--tui]   # --remote needs Enterprise API key
 kuro fix [path] [--dry-run|--auto]
 kuro canary generate|inject|verify|list
 kuro attest verify|keygen|inspect
@@ -144,7 +148,7 @@ kuro license status|apply <token>
 kuro version | kuro help
 ```
 
-Optional companion commands (`auth`, `deploy`, `setup`, `health`, `up`, `backup`, `webhook`, `scan --remote`) talk to a Kuro **server** stack. Prefer [Haiagari/kuro-enterprise](https://github.com/Haiagari/kuro-enterprise) for that path.
+Companion commands (`deploy`, `setup`, `up`, `auth`, `status`, `health`, `backup`, `webhook`, `scan --remote`) belong to the Kuro Enterprise server architecture. Running them provides direct guidance and documentation links to [Haiagari/kuro-enterprise](https://github.com/Haiagari/kuro-enterprise).
 
 ### Local Git proxy
 
