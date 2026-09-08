@@ -433,3 +433,44 @@ func TestLocalAdapter_RunHonorsContextCancellation(t *testing.T) {
 		t.Fatal("expected error on canceled context, got nil")
 	}
 }
+
+func TestLocalAdapter_ScopeDifferentialCache(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "app.go")
+	if err := os.WriteFile(testFile, []byte("package main\nfunc main() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	adapter := NewLocalAdapter(false)
+
+	// 1. Initial scope: file is new, should return scanners
+	scanners, err := adapter.Scope(context.Background(), tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected Scope error: %v", err)
+	}
+	if len(scanners) == 0 {
+		t.Fatal("expected scanners on initial unscanned directory, got 0")
+	}
+
+	// 2. Commit cache (simulating clean pass)
+	adapter.CommitCache(tmpDir)
+
+	// 3. Second scope without file edits: clean cache hit, should return 0 scanners
+	cachedScanners, err := adapter.Scope(context.Background(), tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected Scope error on cache hit: %v", err)
+	}
+	if len(cachedScanners) != 0 {
+		t.Fatalf("expected 0 scanners on clean cache hit, got %v", cachedScanners)
+	}
+
+	// 4. Force no-cache: should return scanners even if unchanged
+	adapter.SetNoCache(true)
+	forcedScanners, err := adapter.Scope(context.Background(), tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected Scope error on no-cache: %v", err)
+	}
+	if len(forcedScanners) == 0 {
+		t.Fatal("expected scanners when noCache is set, got 0")
+	}
+}

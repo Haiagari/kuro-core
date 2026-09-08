@@ -36,6 +36,7 @@ func RunScan(args []string) {
 	remoteFlag := fs.Bool("remote", false, "Force remote mode (send to server)")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format")
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
+	noCacheFlag := fs.Bool("no-cache", false, "Disable file change cache")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
 	// Go's flag package stops at the first non-flag; docs/examples use `scan PATH --json`.
@@ -98,7 +99,11 @@ func RunScan(args []string) {
 		mode = "remote"
 	} else if isLocalPath(target) {
 		history := *historyFlag
-		adapter = orchestrator.NewLocalAdapter(history)
+		local := orchestrator.NewLocalAdapter(history)
+		if *noCacheFlag {
+			local.SetNoCache(true)
+		}
+		adapter = local
 		if history {
 			mode = fmt.Sprintf("local history (%s)", detectRuntime())
 		} else {

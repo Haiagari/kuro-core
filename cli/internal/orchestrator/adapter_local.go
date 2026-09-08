@@ -31,13 +31,40 @@ const (
 type LocalAdapter struct {
 	runtime     string // "docker" or "podman"
 	historyScan bool   // scan full git history instead of working tree
+	noCache     bool   // bypass change cache and force full scan
 }
 
 // NewLocalAdapter creates a local adapter by detecting the available runtime.
 // Pass historyScan=true for full git history scan mode.
 func NewLocalAdapter(historyScan bool) *LocalAdapter {
 	r := detectRuntime()
-	return &LocalAdapter{runtime: r, historyScan: historyScan}
+	noCache := os.Getenv("KURO_NO_CACHE") == "1" || os.Getenv("KURO_NO_CACHE") == "true"
+	return &LocalAdapter{runtime: r, historyScan: historyScan, noCache: noCache}
+}
+
+// SetNoCache enables or disables the file change cache.
+func (a *LocalAdapter) SetNoCache(noCache bool) {
+	a.noCache = noCache
+}
+
+// CommitCache marks all files in the target directory as scanned and saves the cache.
+// Called by the orchestrator ONLY when a scan completes with a clean pass.
+func (a *LocalAdapter) CommitCache(target string) {
+	if a.noCache || a.historyScan {
+		return
+	}
+	cache := openFileCache()
+	if cache == nil {
+		return
+	}
+	filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		cache.MarkScanned(path) // best-effort
+		return nil
+	})
+	cache.Save() // best-effort
 }
 
 func (a *LocalAdapter) Name() string { return "local" }
@@ -146,18 +173,12 @@ func (a *LocalAdapter) Scope(ctx context.Context, target string) ([]string, erro
 	}
 
 	// ── Print file stats ───────────────────────────────────
-	if cache != nil && totalFiles > 0 {
+	if cache != nil && !a.noCache && totalFiles > 0 {
+		if newFiles == 0 && cachedFiles > 0 {
+			fmt.Fprintf(os.Stderr, "  %d files · %d cached · 0 new (clean cache hit)\n", totalFiles, cachedFiles)
+			return nil, nil
+		}
 		fmt.Fprintf(os.Stderr, "  %d files · %d cached · %d new\n", totalFiles, cachedFiles, newFiles)
-
-		// Mark all files as scanned and persist
-		filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-			cache.MarkScanned(path) // best-effort
-			return nil
-		})
-		cache.Save() // best-effort
 	}
 
 	return scanners, nil

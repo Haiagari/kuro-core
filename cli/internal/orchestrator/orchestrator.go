@@ -101,6 +101,11 @@ type Adapter interface {
 	Run(ctx context.Context, target string, scanners []string) (RunResult, error)
 }
 
+// CacheCommitter is implemented by adapters that support caching clean scan results.
+type CacheCommitter interface {
+	CommitCache(target string)
+}
+
 // ── Orchestrator ────────────────────────────────────────────
 
 // Orchestrator coordinates the scan phases.
@@ -182,6 +187,13 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 	decision := o.analyze(runResult.Findings)
 	result.Decision = decision
 	o.reportPhase(PhaseAnalyze, "done", fmt.Sprintf("Decision: %s", decision))
+
+	// Commit file cache only if the scan completed with a clean pass
+	if decision == "pass" {
+		if cc, ok := o.adapter.(CacheCommitter); ok {
+			cc.CommitCache(fetchID)
+		}
+	}
 
 	// ── PHASE 5: DECIDE ──────────────────────────────────────
 	o.reportPhase(PhaseDecide, "running", "")
