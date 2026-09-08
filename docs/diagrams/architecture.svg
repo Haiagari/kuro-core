@@ -1,0 +1,364 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 920" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&amp;display=swap");
+      text { font-family: "JetBrains Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+      .section-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+      .card-header { font-size: 13px; font-weight: 700; fill: #ffffff; letter-spacing: 0.5px; }
+      .card-sub { font-size: 10.5px; font-weight: 500; fill: #94a3b8; }
+      .code-font { font-size: 10.5px; font-weight: 600; fill: #38bdf8; }
+      .tag { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; }
+    </style>
+
+    <linearGradient id="arch-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06080d"/>
+      <stop offset="50%" stop-color="#090d18"/>
+      <stop offset="100%" stop-color="#05070b"/>
+    </linearGradient>
+
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0e1626"/>
+      <stop offset="100%" stop-color="#090e1a"/>
+    </linearGradient>
+
+    <pattern id="arch-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#161e31" stroke-width="0.6" stroke-opacity="0.45"/>
+    </pattern>
+
+    <filter id="glow-c" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00f2fe" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glow-g" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glow-r" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f43f5e" flood-opacity="0.4"/>
+    </filter>
+
+    <marker id="arr-c" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 2 L 8 5 L 1 8 Z" fill="#00f2fe"/>
+    </marker>
+    <marker id="arr-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 2 L 8 5 L 1 8 Z" fill="#38bdf8"/>
+    </marker>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1440" height="920" rx="16" fill="url(#arch-bg)"/>
+  <rect width="1440" height="920" rx="16" fill="url(#arch-grid)"/>
+  <rect x="1" y="1" width="1438" height="918" rx="15" fill="none" stroke="#1e293b" stroke-width="1.2"/>
+
+  <!-- Top Title Bar -->
+  <g transform="translate(40, 30)">
+    <rect x="0" y="0" width="4" height="20" rx="2" fill="#00f2fe"/>
+    <text x="16" y="16" font-size="16" font-weight="900" letter-spacing="3" fill="#ffffff">KURO CORE <tspan fill="#00f2fe">// SYSTEM ARCHITECTURE</tspan></text>
+    <text x="470" y="16" font-size="11.5" font-weight="500" fill="#64748b">|  LOCAL-FIRST FAIL-CLOSED APPSEC GATE &amp; HARDENED CONTAINER ENGINE</text>
+    <g transform="translate(1210, -2)">
+      <rect x="0" y="0" width="150" height="24" rx="12" fill="#0c1729" stroke="#00f2fe" stroke-width="1"/>
+      <circle cx="14" cy="12" r="4" fill="#00f2fe"/>
+      <text x="26" y="16" font-size="9.5" font-weight="800" fill="#00f2fe" letter-spacing="1">SINGLE BINARY (GO)</text>
+    </g>
+  </g>
+
+  <!-- ======================================================================== -->
+  <!-- LAYER 1: CLI INTERFACE & COMMAND SURFACE (Y: 75 to 215, H: 140)           -->
+  <!-- ======================================================================== -->
+  <g transform="translate(40, 75)">
+    <rect width="1360" height="135" rx="12" fill="#080d17" stroke="#1e293b" stroke-width="1.2"/>
+    <g transform="translate(20, 18)">
+      <rect x="0" y="0" width="3" height="12" rx="1.5" fill="#38bdf8"/>
+      <text x="10" y="10" class="section-label" fill="#38bdf8">01. CLI COMMAND SURFACE &amp; ENTRYPOINTS (kuro)</text>
+      <text x="500" y="10" font-size="10" font-weight="500" fill="#64748b">pkg: cli/cmd, cli/main.go</text>
+    </g>
+
+    <!-- 6 Command Cards (width: 205 each, gap: 18) -->
+    <!-- Card 1: doctor -->
+    <g transform="translate(20, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
+      <text x="12" y="22" class="code-font">kuro doctor</text>
+      <text x="12" y="40" class="card-sub">Runtime diagnostics</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">Docker, Podman, images</text>
+    </g>
+
+    <!-- Card 2: scan -->
+    <g transform="translate(243, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#00f2fe" stroke-width="1.2" filter="url(#glow-c)"/>
+      <text x="12" y="22" class="code-font">kuro scan [path]</text>
+      <text x="12" y="40" class="card-sub">Local multi-scanner</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#38bdf8">--json · --history · --no-cache</text>
+    </g>
+
+    <!-- Card 3: fix -->
+    <g transform="translate(466, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
+      <text x="12" y="22" class="code-font">kuro fix [path]</text>
+      <text x="12" y="40" class="card-sub">Interactive remediation</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">Bubbletea TUI · env var extraction</text>
+    </g>
+
+    <!-- Card 4: canary -->
+    <g transform="translate(689, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
+      <text x="12" y="22" class="code-font">kuro canary</text>
+      <text x="12" y="40" class="card-sub">Honeypot deception</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">generate · inject · verify · list</text>
+    </g>
+
+    <!-- Card 5: attest -->
+    <g transform="translate(912, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
+      <text x="12" y="22" class="code-font">kuro attest</text>
+      <text x="12" y="40" class="card-sub">Supply-chain proof</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">in-toto · SLSA · Ed25519 verify</text>
+    </g>
+
+    <!-- Card 6: proxy -->
+    <g transform="translate(1135, 42)">
+      <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
+      <text x="12" y="22" class="code-font">kuro proxy</text>
+      <text x="12" y="40" class="card-sub">Fail-closed Smart HTTP</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">Port :8000 · pre-push gate</text>
+    </g>
+  </g>
+
+  <!-- Connective Arrows Layer 1 -> Layer 2 -->
+  <path d="M 345 210 L 345 240" fill="none" stroke="#00f2fe" stroke-width="1.5" marker-end="url(#arr-c)"/>
+  <path d="M 1237 210 L 1237 240" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+  <!-- ======================================================================== -->
+  <!-- LAYER 2: 6-PHASE ORCHESTRATOR PIPELINE (Y: 245 to 555, H: 310)            -->
+  <!-- ======================================================================== -->
+  <g transform="translate(40, 245)">
+    <rect width="1360" height="305" rx="14" fill="#090e1a" stroke="#00f2fe" stroke-width="1.4" filter="url(#glow-c)"/>
+
+    <g transform="translate(24, 20)">
+      <rect x="0" y="0" width="3" height="14" rx="1.5" fill="#00f2fe"/>
+      <text x="12" y="12" class="section-label" fill="#00f2fe">02. CORE ORCHESTRATOR ENGINE (6-PHASE PIPELINE)</text>
+      <text x="520" y="12" font-size="11" font-weight="500" fill="#64748b">pkg: cli/internal/orchestrator</text>
+    </g>
+
+    <!-- 6 Phase Horizontal Pipeline Cards (Width: 204 each, Gap: 17) -->
+    <!-- Phase 1: Fetch -->
+    <g transform="translate(24, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#1e293b" stroke-width="1"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 01</text>
+      <text x="12" y="44" class="card-header">FETCH</text>
+      <text x="12" y="66" class="card-sub">• Validate target path</text>
+      <text x="12" y="84" class="card-sub">• Runtime probe (Docker/Podman)</text>
+      <text x="12" y="102" class="card-sub">• Async image pull start</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">runtime.go</text>
+    </g>
+
+    <!-- Connector 1-2 -->
+    <path d="M 228 117 L 241 117" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+    <!-- Phase 2: Scope -->
+    <g transform="translate(245, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#1e293b" stroke-width="1"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 02</text>
+      <text x="12" y="44" class="card-header">SCOPE</text>
+      <text x="12" y="66" class="card-sub">• Lockfile &amp; IaC detection</text>
+      <text x="12" y="84" class="card-sub">• Working tree vs --history</text>
+      <text x="12" y="102" class="card-sub">• Differential cache lookup</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">cache.go · scanners.go</text>
+    </g>
+
+    <!-- Connector 2-3 -->
+    <path d="M 449 117 L 462 117" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+    <!-- Phase 3: Scan -->
+    <g transform="translate(466, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#00f2fe" stroke-width="1.2"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 03</text>
+      <text x="12" y="44" class="card-header">SCAN</text>
+      <text x="12" y="66" class="card-sub">• Bounded worker semaphore</text>
+      <text x="12" y="84" class="card-sub">• Ephemeral container pool</text>
+      <text x="12" y="102" class="card-sub">• Fail-closed error join</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#00f2fe">adapter_local.go</text>
+    </g>
+
+    <!-- Connector 3-4 -->
+    <path d="M 670 117 L 683 117" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+    <!-- Phase 4: Analyze -->
+    <g transform="translate(687, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#1e293b" stroke-width="1"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 04</text>
+      <text x="12" y="44" class="card-header">ANALYZE</text>
+      <text x="12" y="66" class="card-sub">• Multi-tool JSON parsing</text>
+      <text x="12" y="84" class="card-sub">• SHA-256 fingerprinting</text>
+      <text x="12" y="102" class="card-sub">• Jaccard dedup collation</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">parsers.go</text>
+    </g>
+
+    <!-- Connector 4-5 -->
+    <path d="M 891 117 L 904 117" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+    <!-- Phase 5: Decide -->
+    <g transform="translate(908, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#1e293b" stroke-width="1"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 05</text>
+      <text x="12" y="44" class="card-header">DECIDE</text>
+      <text x="12" y="66" class="card-sub">• PolicyEngine evaluation</text>
+      <text x="12" y="84" class="card-sub">• Severity threshold rules</text>
+      <text x="12" y="102" class="card-sub">• pass / review / block</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">policy.go</text>
+    </g>
+
+    <!-- Connector 5-6 -->
+    <path d="M 1112 117 L 1125 117" fill="none" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+    <!-- Phase 6: Report -->
+    <g transform="translate(1129, 50)">
+      <rect width="204" height="135" rx="8" fill="#070a12" stroke="#1e293b" stroke-width="1"/>
+      <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 06</text>
+      <text x="12" y="44" class="card-header">REPORT</text>
+      <text x="12" y="66" class="card-sub">• Bubbletea TUI (TTY)</text>
+      <text x="12" y="84" class="card-sub">• Machine JSON (--json)</text>
+      <text x="12" y="102" class="card-sub">• Exit code: 0 / 2 / 1</text>
+      <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">decision_exit.go</text>
+    </g>
+
+    <!-- Subsystem Control Modules (Bottom Row of Orchestrator) -->
+    <!-- Module A: Differential Cache -->
+    <g transform="translate(24, 202)">
+      <rect width="425" height="85" rx="8" fill="#050811" stroke="#1e293b" stroke-width="1"/>
+      <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">Differential File Cache</text>
+      <text x="210" y="24" class="code-font">$HOME/.kuro/cache</text>
+      <text x="14" y="46" class="card-sub">Hashes source files. Skips execution if untouched. Committed strictly on PASS.</text>
+      <text x="14" y="66" font-size="10" font-weight="600" fill="#64748b">CLI bypass: --no-cache · Env: KURO_NO_CACHE=1</text>
+    </g>
+
+    <!-- Module B: Concurrency Limiter -->
+    <g transform="translate(466, 202)">
+      <rect width="425" height="85" rx="8" fill="#050811" stroke="#1e293b" stroke-width="1"/>
+      <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">Worker Semaphore Pool</text>
+      <text x="220" y="24" class="code-font">KURO_MAX_CONCURRENCY</text>
+      <text x="14" y="46" class="card-sub">Limits parallel scanner containers (default: 2) to prevent workstation CPU/RAM thrashing.</text>
+      <text x="14" y="66" font-size="10" font-weight="600" fill="#64748b">Resource protection · Ephemeral container lifecycle</text>
+    </g>
+
+    <!-- Module C: Policy Engine & Rules -->
+    <g transform="translate(908, 202)">
+      <rect width="425" height="85" rx="8" fill="#050811" stroke="#1e293b" stroke-width="1"/>
+      <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">Embedded Policy Engine</text>
+      <text x="220" y="24" class="code-font">default-policy.json</text>
+      <text x="14" y="46" class="card-sub">Dynamic rule thresholds; zero tolerance on leaked secrets. Overridable via KURO_POLICY_PATH.</text>
+      <text x="14" y="66" font-size="10" font-weight="600" fill="#64748b">Fail-closed gate logic · Strict security baseline</text>
+    </g>
+  </g>
+
+  <!-- Connective Arrows Layer 2 -> Layer 3 -->
+  <path d="M 568 550 L 568 580" fill="none" stroke="#00f2fe" stroke-width="1.5" marker-end="url(#arr-c)"/>
+
+  <!-- ======================================================================== -->
+  <!-- LAYER 3: HARDENED SCANNER FLEET & RUNTIME ISOLATION (Y: 585 to 885, H: 295)-->
+  <!-- ======================================================================== -->
+  <g transform="translate(40, 585)">
+    <rect width="1360" height="295" rx="14" fill="#080c16" stroke="#1e293b" stroke-width="1.2"/>
+
+    <g transform="translate(24, 20)">
+      <rect x="0" y="0" width="3" height="14" rx="1.5" fill="#f43f5e"/>
+      <text x="12" y="12" class="section-label" fill="#f43f5e">03. HARDENED CONTAINER SCANNER FLEET (DOCKER / PODMAN)</text>
+      <text x="560" y="12" font-size="11" font-weight="500" fill="#64748b">pkg: cli/internal/orchestrator/container.go</text>
+    </g>
+
+    <!-- 4 Scanner Cards (Width: 312 each, Gap: 17) -->
+    <!-- Scanner 1: Gitleaks -->
+    <g transform="translate(24, 46)">
+      <rect width="312" height="120" rx="8" fill="#060911" stroke="#334155" stroke-width="1"/>
+      <g transform="translate(14, 16)">
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#ffffff">Gitleaks</text>
+        <text x="80" y="14" class="tag" fill="#38bdf8">v8.30.1</text>
+        <text x="210" y="14" font-size="10" font-weight="700" fill="#f43f5e">SECRETS</text>
+        <text x="0" y="38" class="card-sub">Working tree 'dir' mode or 'detect'</text>
+        <text x="0" y="56" class="card-sub">Scans commits, working tree, and env files</text>
+        <rect x="0" y="70" width="284" height="20" rx="4" fill="#0c1626"/>
+        <text x="8" y="84" font-size="9.5" font-weight="600" fill="#38bdf8">Zero tolerance · Strict block on find</text>
+      </g>
+    </g>
+
+    <!-- Scanner 2: Semgrep -->
+    <g transform="translate(353, 46)">
+      <rect width="312" height="120" rx="8" fill="#060911" stroke="#00f2fe" stroke-width="1.2"/>
+      <g transform="translate(14, 16)">
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#ffffff">Semgrep</text>
+        <text x="80" y="14" class="tag" fill="#00f2fe">v1.165.0</text>
+        <text x="235" y="14" font-size="10" font-weight="700" fill="#00f2fe">SAST</text>
+        <text x="0" y="38" class="card-sub">Core embedded rules (semgrep-core.yml)</text>
+        <text x="0" y="56" class="card-sub">Runs offline under --network=none</text>
+        <rect x="0" y="70" width="284" height="20" rx="4" fill="#0c1626"/>
+        <text x="8" y="84" font-size="9.5" font-weight="600" fill="#00f2fe">--max-memory 350 · --metrics=off</text>
+      </g>
+    </g>
+
+    <!-- Scanner 3: Trivy -->
+    <g transform="translate(682, 46)">
+      <rect width="312" height="120" rx="8" fill="#060911" stroke="#334155" stroke-width="1"/>
+      <g transform="translate(14, 16)">
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#ffffff">Trivy</text>
+        <text x="60" y="14" class="tag" fill="#38bdf8">v0.57.0</text>
+        <text x="245" y="14" font-size="10" font-weight="700" fill="#38bdf8">SCA</text>
+        <text x="0" y="38" class="card-sub">Scans dependencies &amp; lockfiles for CVEs</text>
+        <text x="0" y="56" class="card-sub">go.mod, package-lock, requirements.txt</text>
+        <rect x="0" y="70" width="284" height="20" rx="4" fill="#0c1626"/>
+        <text x="8" y="84" font-size="9.5" font-weight="600" fill="#38bdf8">--offline-scan · Vulnerability DB</text>
+      </g>
+    </g>
+
+    <!-- Scanner 4: Checkov -->
+    <g transform="translate(1011, 46)">
+      <rect width="312" height="120" rx="8" fill="#060911" stroke="#334155" stroke-width="1"/>
+      <g transform="translate(14, 16)">
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#ffffff">Checkov</text>
+        <text x="80" y="14" class="tag" fill="#38bdf8">v3.2.400</text>
+        <text x="250" y="14" font-size="10" font-weight="700" fill="#38bdf8">IAC</text>
+        <text x="0" y="38" class="card-sub">Infrastructure as Code analysis</text>
+        <text x="0" y="56" class="card-sub">Dockerfile, Terraform (.tf) validation</text>
+        <rect x="0" y="70" width="284" height="20" rx="4" fill="#0c1626"/>
+        <text x="8" y="84" font-size="9.5" font-weight="600" fill="#38bdf8">--soft-fail · JSON output collation</text>
+      </g>
+    </g>
+
+    <!-- Hardening Sandbox Specifications Strip -->
+    <g transform="translate(24, 182)">
+      <rect width="1312" height="90" rx="8" fill="#04060b" stroke="#1e293b" stroke-width="1.2"/>
+      <g transform="translate(16, 16)">
+        <circle cx="6" cy="6" r="4" fill="#f43f5e"/>
+        <text x="18" y="10" font-size="12" font-weight="800" fill="#ffffff">CONTAINER HARDENING &amp; FAIL-CLOSED GUARANTEE</text>
+        <text x="450" y="10" font-size="10.5" font-weight="500" fill="#94a3b8">Applied across all container executions in container.go</text>
+
+        <!-- 5 Feature Badges -->
+        <g transform="translate(0, 26)">
+          <rect width="230" height="28" rx="4" fill="#091322" stroke="#1e293b" stroke-width="1"/>
+          <text x="10" y="18" font-size="10" font-weight="700" fill="#00f2fe">--network=none</text>
+          <text x="120" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">Zero data exfiltration</text>
+        </g>
+
+        <g transform="translate(245, 26)">
+          <rect width="230" height="28" rx="4" fill="#091322" stroke="#1e293b" stroke-width="1"/>
+          <text x="10" y="18" font-size="10" font-weight="700" fill="#00f2fe">--cap-drop=ALL</text>
+          <text x="120" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">Drop root capabilities</text>
+        </g>
+
+        <g transform="translate(490, 26)">
+          <rect width="260" height="28" rx="4" fill="#091322" stroke="#1e293b" stroke-width="1"/>
+          <text x="10" y="18" font-size="10" font-weight="700" fill="#00f2fe">no-new-privileges</text>
+          <text x="145" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">Prevent escalation</text>
+        </g>
+
+        <g transform="translate(765, 26)">
+          <rect width="260" height="28" rx="4" fill="#091322" stroke="#1e293b" stroke-width="1"/>
+          <text x="10" y="18" font-size="10" font-weight="700" fill="#00f2fe">--memory=512m --cpus=1</text>
+          <text x="180" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">Quota bounds</text>
+        </g>
+
+        <g transform="translate(1040, 26)">
+          <rect width="240" height="28" rx="4" fill="#1f0910" stroke="#f43f5e" stroke-width="1"/>
+          <text x="10" y="18" font-size="10" font-weight="700" fill="#f43f5e">FAIL-CLOSED (exit 1)</text>
+          <text x="145" y="18" font-size="9.5" font-weight="500" fill="#fda4af">Crash blocks push</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

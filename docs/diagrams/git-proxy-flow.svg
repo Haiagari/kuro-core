@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&amp;display=swap");
+      text { font-family: "JetBrains Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+      .section-title { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+      .card-title { font-size: 13px; font-weight: 700; fill: #ffffff; letter-spacing: 0.5px; }
+      .card-sub { font-size: 10.5px; font-weight: 500; fill: #94a3b8; }
+      .code-tag { font-size: 10.5px; font-weight: 600; fill: #38bdf8; }
+      .badge-tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.8px; }
+    </style>
+
+    <linearGradient id="proxy-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07090e"/>
+      <stop offset="50%" stop-color="#0a0f1a"/>
+      <stop offset="100%" stop-color="#05070c"/>
+    </linearGradient>
+
+    <linearGradient id="card-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#080d16"/>
+    </linearGradient>
+
+    <pattern id="proxy-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#161e31" stroke-width="0.6" stroke-opacity="0.45"/>
+    </pattern>
+
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00f2fe" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f43f5e" flood-opacity="0.5"/>
+    </filter>
+
+    <marker id="arr-c" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 2 L 8 5 L 1 8 Z" fill="#00f2fe"/>
+    </marker>
+    <marker id="arr-g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 2 L 8 5 L 1 8 Z" fill="#10b981"/>
+    </marker>
+    <marker id="arr-r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 2 L 8 5 L 1 8 Z" fill="#f43f5e"/>
+    </marker>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="420" rx="16" fill="url(#proxy-bg)"/>
+  <rect width="1200" height="420" rx="16" fill="url(#proxy-grid)"/>
+  <rect x="1" y="1" width="1198" height="418" rx="15" fill="none" stroke="#1e293b" stroke-width="1.2"/>
+
+  <!-- Top Title Bar -->
+  <g transform="translate(35, 28)">
+    <rect x="0" y="0" width="4" height="18" rx="2" fill="#00f2fe"/>
+    <text x="14" y="14" class="section-title" fill="#00f2fe">KURO CORE // GIT PROXY &amp; PRE-PUSH GATE</text>
+    <text x="380" y="14" font-size="11" font-weight="500" fill="#64748b">|  SMART-HTTP INTERCEPTION, FAIL-CLOSED EXECUTION &amp; LEAK PREVENTION</text>
+    <g transform="translate(1010, -2)">
+      <rect x="0" y="0" width="155" height="22" rx="11" fill="#0b1322" stroke="#00f2fe" stroke-width="1"/>
+      <circle cx="12" cy="11" r="3.5" fill="#00f2fe"/>
+      <text x="24" y="15" font-size="9" font-weight="700" fill="#00f2fe" letter-spacing="1">PORT :8000</text>
+    </g>
+  </g>
+
+  <!-- STEP 1: GIT CLIENT (X: 35, Y: 75, W: 210, H: 305) -->
+  <g transform="translate(35, 75)">
+    <rect width="210" height="305" rx="10" fill="url(#card-dark)" stroke="#334155" stroke-width="1.2"/>
+    <g transform="translate(14, 16)">
+      <rect x="0" y="0" width="28" height="20" rx="4" fill="#0284c7" opacity="0.2"/>
+      <text x="14" y="14" text-anchor="middle" font-size="11" font-weight="800" fill="#38bdf8">&gt;_</text>
+      <text x="36" y="15" class="card-title">Git Client</text>
+      <text x="0" y="38" class="card-sub">Developer Terminal</text>
+
+      <!-- Terminal Action Box -->
+      <g transform="translate(0, 52)">
+        <rect width="182" height="60" rx="6" fill="#060910" stroke="#1e293b" stroke-width="1"/>
+        <text x="10" y="20" font-size="9.5" font-weight="700" fill="#64748b">REMOTE CONFIGURATION</text>
+        <text x="10" y="36" class="code-tag">git remote add proxy</text>
+        <text x="10" y="50" font-size="9.5" font-weight="500" fill="#94a3b8">http://localhost:8000/repo</text>
+      </g>
+
+      <!-- Push Command Box -->
+      <g transform="translate(0, 122)">
+        <rect width="182" height="54" rx="6" fill="#060910" stroke="#00f2fe" stroke-width="1"/>
+        <text x="10" y="20" class="badge-tag" fill="#00f2fe">PUSH COMMAND</text>
+        <text x="10" y="40" class="code-tag" font-weight="700">git push proxy main</text>
+      </g>
+
+      <!-- Stream Protocol Box -->
+      <g transform="translate(0, 186)">
+        <rect width="182" height="85" rx="6" fill="#060910" stroke="#1e293b" stroke-width="1"/>
+        <text x="10" y="18" font-size="9.5" font-weight="700" fill="#e2e8f0">Smart-HTTP Protocol:</text>
+        <text x="10" y="36" font-size="9" font-weight="500" fill="#64748b">• git-receive-pack request</text>
+        <text x="10" y="52" font-size="9" font-weight="500" fill="#64748b">• Buffers packfile &amp; refs</text>
+        <text x="10" y="68" font-size="9" font-weight="500" fill="#64748b">• Streams sideband telemetry</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <path d="M 245 227 L 285 227" fill="none" stroke="#00f2fe" stroke-width="2" marker-end="url(#arr-c)"/>
+
+  <!-- STEP 2: KURO PROXY GATEWAY (X: 295, Y: 75, W: 450, H: 305) -->
+  <g transform="translate(295, 75)">
+    <rect width="450" height="305" rx="12" fill="#090e1a" stroke="#00f2fe" stroke-width="1.4" filter="url(#glow-cyan)"/>
+    <g transform="translate(18, 16)">
+      <rect x="0" y="0" width="28" height="20" rx="4" fill="#00f2fe" opacity="0.15"/>
+      <text x="14" y="14" text-anchor="middle" font-size="11" font-weight="800" fill="#00f2fe">黒</text>
+      <text x="36" y="15" class="card-title">Kuro Proxy Engine</text>
+
+      <g transform="translate(286, 0)">
+        <rect width="128" height="22" rx="4" fill="#06121f" stroke="#00f2fe" stroke-width="0.8"/>
+        <text x="64" y="15" text-anchor="middle" font-size="9.5" font-weight="700" fill="#00f2fe">SCAN_MODE=local</text>
+      </g>
+
+      <!-- Sub-box 1: In-Process Smart-HTTP Buffer -->
+      <g transform="translate(0, 36)">
+        <rect width="414" height="66" rx="6" fill="#060910" stroke="#1e293b" stroke-width="1"/>
+        <text x="12" y="18" font-size="10" font-weight="700" fill="#e2e8f0">1. Smart-HTTP Interceptor &amp; Buffer</text>
+        <text x="12" y="36" class="card-sub">Intercepts git-receive-pack; extracts refs and commit tree to temp workspace.</text>
+        <text x="12" y="52" font-size="9.5" font-weight="600" fill="#38bdf8">Zero network release prior to policy verification</text>
+      </g>
+
+      <!-- Sub-box 2: Local Scan Invocation -->
+      <g transform="translate(0, 112)">
+        <rect width="414" height="74" rx="6" fill="#060910" stroke="#1e293b" stroke-width="1"/>
+        <text x="12" y="18" font-size="10" font-weight="700" fill="#e2e8f0">2. Local Scan Trigger (CLI Shellout)</text>
+        <text x="12" y="38" class="code-tag">kuro scan &lt;extracted-dir&gt; --json</text>
+        <text x="12" y="56" font-size="9.5" font-weight="500" fill="#94a3b8">Uses binary at KURO_BIN or resolved from PATH · 6-phase orchestrator</text>
+      </g>
+
+      <!-- Sub-box 3: Hardened Scan Execution & Gate -->
+      <g transform="translate(0, 196)">
+        <rect width="414" height="76" rx="6" fill="#0b1324" stroke="#38bdf8" stroke-width="1"/>
+        <text x="12" y="20" font-size="10" font-weight="800" fill="#ffffff">3. Hardened Scanners + Policy Decision</text>
+        <text x="12" y="40" font-size="9.5" font-weight="500" fill="#94a3b8">Gitleaks (secrets) · Semgrep (SAST) · Trivy (SCA) · Checkov (IaC)</text>
+        <text x="12" y="58" font-size="9.5" font-weight="600" fill="#00f2fe">PolicyEngine checks severities · Fail-closed enforcement</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Split Connectors 2 -> 3 (Pass vs Block) -->
+  <path d="M 745 155 L 785 130" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arr-g)"/>
+  <path d="M 745 295 L 785 320" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arr-r)"/>
+
+  <!-- STEP 3A: PASS OUTCOME (X: 795, Y: 75, W: 370, H: 135) -->
+  <g transform="translate(795, 75)">
+    <rect width="370" height="135" rx="10" fill="#061c14" stroke="#10b981" stroke-width="1.4" filter="url(#glow-green)"/>
+    <g transform="translate(16, 18)">
+      <circle cx="10" cy="10" r="8" fill="#10b981" opacity="0.2"/>
+      <text x="10" y="14" text-anchor="middle" font-size="11" font-weight="900" fill="#10b981">&#x2713;</text>
+      <text x="26" y="14" font-size="14" font-weight="800" fill="#ffffff">PASS (Decision == "pass", Exit 0)</text>
+
+      <g transform="translate(0, 30)">
+        <rect width="338" height="68" rx="6" fill="#03120d" stroke="#10b981" stroke-width="0.8"/>
+        <text x="12" y="20" font-size="11" font-weight="700" fill="#34d399">Forwarded to Upstream Forge</text>
+        <text x="12" y="38" font-size="9.5" font-weight="500" fill="#a7f3d0">• Proxy replays buffered packfile to UPSTREAM_URL</text>
+        <text x="12" y="54" font-size="9.5" font-weight="500" fill="#a7f3d0">• Default: https://github.com/&lt;owner&gt;/&lt;repo&gt;.git</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- STEP 3B: BLOCK OUTCOME (X: 795, Y: 245, W: 370, H: 135) -->
+  <g transform="translate(795, 245)">
+    <rect width="370" height="135" rx="10" fill="#240a11" stroke="#f43f5e" stroke-width="1.4" filter="url(#glow-red)"/>
+    <g transform="translate(16, 18)">
+      <circle cx="10" cy="10" r="8" fill="#f43f5e" opacity="0.2"/>
+      <text x="10" y="14" text-anchor="middle" font-size="11" font-weight="900" fill="#f43f5e">&#x2717;</text>
+      <text x="26" y="14" font-size="14" font-weight="800" fill="#ffffff">BLOCK (Violation or Error, Exit 1)</text>
+
+      <g transform="translate(0, 30)">
+        <rect width="338" height="68" rx="6" fill="#140408" stroke="#f43f5e" stroke-width="0.8"/>
+        <text x="12" y="20" font-size="11" font-weight="700" fill="#fb7185">Push Terminated with HTTP 403</text>
+        <text x="12" y="38" font-size="9.5" font-weight="500" fill="#fecdd3">• Zero bytes sent to upstream forge</text>
+        <text x="12" y="54" font-size="9.5" font-weight="500" fill="#fecdd3">• Sideband packets print file:line &amp; secret leak to stderr</text>
+      </g>
+    </g>
+  </g>
+</svg>

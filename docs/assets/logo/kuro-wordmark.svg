@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="wm-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="wm-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+    <filter id="wm-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="3.5" flood-color="#00f2fe" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="480" height="128" rx="20" fill="#07090e"/>
+
+  <!-- Logo Mark (X: 20 to 120) -->
+  <g transform="translate(10, 0)">
+    <path d="M 98 44 A 48 48 0 1 0 98 84 L 90 78 A 38 38 0 1 1 90 50 Z" 
+          fill="url(#wm-cyan)" filter="url(#wm-glow)"/>
+    <polygon points="32,35 96,35 90,43 38,43" fill="#ffffff"/>
+    <polygon points="38,43 48,43 48,93 38,93" fill="#ffffff"/>
+    <polygon points="48,56 78,36 86,44 56,64" fill="#ffffff"/>
+    <polygon points="56,64 86,86 78,94 48,72" fill="url(#wm-red)"/>
+    <polygon points="65,58 71,64 65,70 59,64" fill="#00f2fe" filter="url(#wm-glow)"/>
+  </g>
+
+  <!-- Divider Line -->
+  <line x1="148" y1="36" x2="148" y2="92" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- Typography -->
+  <g transform="translate(172, 0)">
+    <!-- Primary Title: KURO CORE -->
+    <text x="0" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+          font-size="34" font-weight="900" letter-spacing="4.5" fill="#ffffff">
+      KURO <tspan fill="#00f2fe">COR</tspan><tspan fill="#f43f5e">E</tspan>
+    </text>
+
+    <!-- Kanji Accent & Tagline -->
+    <text x="2" y="88" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+          font-size="11.5" font-weight="700" letter-spacing="3" fill="#94a3b8">
+      LOCAL-FIRST APPSEC GATE
+    </text>
+
+    <!-- Subtle Japanese character 黒 watermark/badge -->
+    <g transform="translate(262, 40)">
+      <rect x="0" y="0" width="26" height="26" rx="4" fill="#0f172a" stroke="#f43f5e" stroke-width="1" opacity="0.8"/>
+      <text x="13" y="18" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="14" font-weight="700" fill="#f43f5e">黒</text>
+    </g>
+  </g>
+</svg>
