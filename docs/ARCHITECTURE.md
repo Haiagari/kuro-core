@@ -38,7 +38,7 @@ Related: [SCANNER-ARCHITECTURE.md](SCANNER-ARCHITECTURE.md) · [API.md](API.md) 
 ```
 
 | Component | Location | Role |
-|---|---|---|
+| --- | --- | --- |
 | CLI entry | `cli/main.go`, `cli/cmd/*` | Subcommands, exit codes, help |
 | Orchestrator | `cli/internal/orchestrator` | Fetch → scope → scan → analyze → decide → report |
 | Local adapter | `adapter_local.go`, `container.go`, `scanners.go` | Containerized scanners with bounded concurrency |
@@ -60,41 +60,50 @@ fetch ──► scope ──► scan ──► analyze ──► decide ──�
 ```
 
 ### 1. Fetch
+
 - Resolve absolute path; require a directory.
 - Detect runtime (`docker` preferred if daemon healthy, else `podman`).
 - Kick off **async** image pulls (`gitleaks`, `semgrep`, `trivy`, `checkov`; plus TruffleHog in `--history` mode).
 
 ### 2. Scope
+
 Default (working tree):
+
 - Always: **Gitleaks**, **Semgrep**
 - **Trivy** if lockfiles present (`go.mod`, `package-lock.json`, `yarn.lock`, `requirements.txt`, `Gemfile.lock`, `Cargo.lock`)
 - **Checkov** if `Dockerfile` or `*.tf` present
 
 History mode (`kuro scan --history`):
+
 - `gitleaks-history` + `trufflehog-history` only (longer timeouts).
 
 **Differential file cache:**
+
 - Fingerprints maintained under `$HOME/.kuro/cache`.
 - Only committed when a scan passes (`decision == "pass"`). If all files are cached and clean, the scan short-circuits with an immediate pass.
 - Bypassed with `--no-cache` or `KURO_NO_CACHE=1`.
 
 ### 3. Scan
+
 - Bounded worker pool semaphore (default 2 parallel containers, configurable via `KURO_MAX_CONCURRENCY`) to prevent host resource starvation.
 - Hardening flags (`--network=none`, `--cap-drop=ALL`, `no-new-privileges`, `--memory=512m`, `--cpus=1.0`).
 - **Fail-closed execution:** container crashes, non-zero exits without parsable outputs, and timeouts strictly return aggregated errors (`errors.Join`), forcing `decision = "block"` and `status = "failed"`.
 - Per-scanner timeout: 5m (15m in history mode). Overall CLI context ~35m.
 
 ### 4. Analyze
+
 - Parse tool JSON (`parsers.go`).
 - Deduplicate (SHA-256 fingerprint + Jaccard similarity).
 - Aggregate severity counts.
 
 ### 5. Decide
+
 - Evaluated by `PolicyEngine` against embedded `rules/default-policy.json` (or external file specified in `KURO_POLICY_PATH`).
 - Checks severity threshold limits and scanner-specific rules (e.g. zero tolerance for Gitleaks secrets).
 - Decisions: `pass` | `review` | `block`.
 
 ### 6. Report
+
 - TUI (auto on TTY), text summary, or `--json`.
 - Exit codes: pass=`0`, review=`2`, block/error=`1` (`cli/cmd/decision_exit.go`).
 - Flags after path work: `kuro scan PATH --json` (reorder in `scan.go`).
@@ -104,7 +113,7 @@ History mode (`kuro scan --history`):
 ## Local vs remote adapters
 
 | Mode | Trigger | Needs |
-|---|---|---|
+| --- | --- | --- |
 | **Local (Core default)** | Local filesystem path | Docker/Podman |
 | **Remote / URL** | `--remote` or `https://…` / `git@…` target | API key (`kuro auth`) + Enterprise/server |
 
@@ -138,12 +147,14 @@ Env knobs: `LISTEN_ADDR`, `UPSTREAM_URL`, `SCAN_MODE`, `KURO_BIN`, `KURO_URL`, `
 
 `services/git-proxy` remains for container images; logic is shared via the importable server package.
 
+The proxy materializes incoming push data in temporary work directories before invoking the scanner.
+
 ---
 
 ## Remediation, deception, attestation
 
 | Capability | Command | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Secret remediation | `kuro fix` | Heuristic walk + env-var rewrite; `--dry-run` / `--auto` |
 | Canaries | `kuro canary` | HMAC-tagged honeypots; manifest `.canary-manifest.json` |
 | Attestation | `kuro attest` | Ed25519 in-toto envelopes; git notes `refs/notes/kuro-attestation` |
@@ -172,7 +183,7 @@ kuro-core/
 ## Troubleshooting
 
 | Issue | Guidance |
-|---|---|
+| --- | --- |
 | “No container runtime” | Install/start Docker or Podman; `kuro doctor` |
 | Proxy cannot scan | Set `KURO_BIN` or put `kuro` on `PATH`; confirm `SCAN_MODE=local` |
 | Semgrep fails offline | Expected to use embedded rules — not `--config=auto`. See scanner doc |
@@ -186,3 +197,5 @@ kuro-core/
 - [API.md](API.md)
 - [../AGENTS.md](../AGENTS.md)
 - [../tests/README.md](../tests/README.md)
+- [market-validation/DEMO.md](market-validation/DEMO.md) — Phase 0/1 demo walkthrough
+- [market-validation/INTERVIEW-GUIDE.md](market-validation/INTERVIEW-GUIDE.md) — Phase 0/1 interview guide

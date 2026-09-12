@@ -35,7 +35,7 @@ Unlike centralized server platforms that require external infrastructure, Kuro C
 
 - **Zero External Infrastructure** — Operates entirely on the workstation via Docker or Podman. No PostgreSQL, NATS, MinIO, or central orchestrators required.
 - **Fail-Closed Security Gate** — Container errors, timeouts, or policy breaches strictly trigger `exit 1` (`decision: block`). No silent passes on scanner failure.
-- **Pre-Push Git Proxy** — Native Smart-HTTP proxy intercepts `git push` on port `:8000`, scans the commit tree in memory, and rejects policy breaches before reaching upstream forges.
+- **Pre-Push Git Proxy** — Native Smart-HTTP proxy intercepts `git push` on port `:8000`, materializes push data in temporary work directories for scanning, and rejects policy breaches before reaching upstream forges.
 - **Hardened Execution Envelope** — Scanners execute with `--network=none`, `--cap-drop=ALL`, `no-new-privileges`, and bounded CPU/memory quotas.
 - **Differential File Cache** — Source hashes are stored in `$HOME/.kuro/cache`. Clean scans short-circuit subsequent runs with zero container overhead.
 - **Interactive Secret Remediation** — `kuro fix` provides a terminal TUI to inspect and replace exposed credentials with environment variables across Go, Python, and JS/TS.
@@ -91,10 +91,14 @@ kuro scan ./my-project --no-cache
 ### Deterministic Exit Codes
 
 | Decision | Exit Code | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pass` | `0` | All policy checks approved; cache committed |
 | `review` | `2` | Advisory findings detected; threshold review needed |
 | `block` | `1` | Policy violation, secret leak, or scanner error |
+
+### Validation kit
+
+See the [demo walkthrough](docs/market-validation/DEMO.md) and [interview guide](docs/market-validation/INTERVIEW-GUIDE.md) for the Phase 0/1 validation materials.
 
 ---
 
@@ -124,7 +128,7 @@ For detailed internals, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Every scanner runs in a strictly confined container sandbox defined in [`cli/internal/orchestrator/container.go`](cli/internal/orchestrator/container.go):
 
 | Scanner | Pinned Version | Layer | Runtime Hardening |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Gitleaks** | `v8.30.1` | Secrets | `--network=none`, `--cap-drop=ALL`, `:ro,Z` mount |
 | **Semgrep** | `v1.165.0` | SAST | Embedded `semgrep-core.yml`, `--max-memory 350`, offline |
 | **Trivy** | `v0.57.0` | SCA (Deps) | `--offline-scan` with automated fallback |
@@ -169,6 +173,7 @@ git push proxy main
 - **Policy Violation (`BLOCK`)** — Push is immediately terminated with HTTP 403 Forbidden. Sideband error packets report offending files and line numbers directly to your terminal stderr. Zero bytes leak upstream.
 
 Configuration variables:
+
 - `LISTEN_ADDR` (default `:8000`, `--addr` flag)
 - `UPSTREAM_URL` (default `https://github.com`, `--upstream` flag)
 - `SCAN_MODE` (default `local`, executes `kuro scan --json`)
@@ -179,7 +184,7 @@ Configuration variables:
 ## Core vs Enterprise
 
 | Dimension | Kuro Core (`Haiagari/kuro-core`) | Kuro Enterprise (`Haiagari/kuro-enterprise`) |
-|---|---|---|
+| --- | --- | --- |
 | **Deployment** | Single binary (`bin/kuro`) | Distributed server cluster |
 | **Execution** | Local Docker / Podman containers | Firecracker MicroVMs / remote worker pool |
 | **Datastores** | None (ephemeral / file cache) | PostgreSQL, NATS, MinIO, Redis |
