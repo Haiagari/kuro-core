@@ -180,7 +180,16 @@ func (h *ProxyHandler) handleReceivePack(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Scan via Core local CLI (SCAN_MODE=local) or Enterprise API (SCAN_MODE=api).
-	blocked, findings, _ := h.Kuro.Scan(scanHostDir, repoPath, commitSHA, branch)
+	blocked, findings, scanErr := h.Kuro.Scan(scanHostDir, repoPath, commitSHA, branch)
+	if scanErr != nil {
+		log.Printf("BLOCKED: %s - security scan failed (commit %s, branch %s): %v", repoPath, commitSHA, branch, scanErr)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintf(w, "remote: KURO CORE - PUSH BLOCKED\n")
+		fmt.Fprintf(w, "remote:   security scan failed: %v\n", scanErr)
+		fmt.Fprintf(w, "remote:\nremote: Unable to verify pushed refs. Fix and push again.\n")
+		return
+	}
 
 	if blocked {
 		log.Printf("BLOCKED: %s - %d findings", repoPath, len(findings))
