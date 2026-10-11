@@ -233,3 +233,32 @@ func TestSemgrepConfigurationFailureIncludesDiagnostic(t *testing.T) {
 		}
 	}
 }
+
+func TestCIModeIgnoresCandidateScannerSuppressions(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args")
+	t.Setenv("KURO_TEST_ARGS", argsFile)
+	runtime := filepath.Join(t.TempDir(), "runtime")
+	os.WriteFile(runtime, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$KURO_TEST_ARGS\"\nprintf '%s' \"$KURO_TEST_REPORT\"\n"), 0755)
+	adapter := &LocalAdapter{runtime: runtime}
+	adapter.SetCIMode(true)
+	t.Setenv("KURO_TEST_REPORT", "[]")
+	if _, err := adapter.runGitleaks(context.Background(), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	args, _ := os.ReadFile(argsFile)
+	for _, expected := range []string{"GITLEAKS_CONFIG_TOML=[extend]\nuseDefault = true", "--ignore-gitleaks-allow", "--gitleaks-ignore-path=/dev/null"} {
+		if !strings.Contains(string(args), expected) {
+			t.Fatalf("missing trusted Gitleaks setting %s", expected)
+		}
+	}
+	t.Setenv("KURO_TEST_REPORT", `{"results":[],"errors":[]}`)
+	if _, err := adapter.runSemgrep(context.Background(), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	args, _ = os.ReadFile(argsFile)
+	for _, expected := range []string{"--disable-nosem", "--no-git-ignore", "--x-ignore-semgrepignore-files"} {
+		if !strings.Contains(string(args), expected) {
+			t.Fatalf("missing trusted Semgrep setting %s", expected)
+		}
+	}
+}

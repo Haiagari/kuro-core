@@ -40,6 +40,7 @@ jobs:
         run: |
           python3 tests/test-install.py
           python3 tests/test-trivy-db-update.py
+          python3 tests/test-pr-gate.py
 
       - name: Build Standalone Binary
         run: make build
@@ -72,3 +73,15 @@ jobs:
         run: make e2e-core
       - name: SAST, SCA, IaC and Git history contracts
         run: ./tests/e2e-scanner-contracts.sh
+
+      - name: Trusted PR gate native acceptance
+        run: python3 tests/e2e-pr-gate.py
+      - name: Bootstrap gate on this PR snapshot using reviewed implementation
+        if: github.event_name == 'pull_request'
+        env:
+          KURO_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags origin "$KURO_BASE_SHA"
+          python3 scripts/ci/pr-gate.py --binary "$PWD/bin/kuro" --repo "$PWD" \
+            --base "$KURO_BASE_SHA" --candidate "$(git rev-parse HEAD)" \
+            --policy "$PWD/deploy/policies/default-policy.json" --output "$RUNNER_TEMP/bootstrap-gate.json"

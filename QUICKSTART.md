@@ -75,3 +75,7 @@ The installer downloads archives and validates SHA-256 checksums. A tag alone do
 - [Contributor checks](tests/README.md)
 
 `kuro fix` is heuristic and requires diff review; use `--dry-run` first. A replacement does not revoke a leaked credential or remove it from Git history. Canary generation does not provide an external alerting service. The proxy is an opt-in Smart-HTTP route; pushes directly to another remote bypass it.
+
+### Optional GitHub merge gate
+
+See [Trusted Kuro PR Gate](docs/CI_GATE.md) for base-controlled CI scanning and activation as a required merge check. Its adoption policy blocks introduced findings and changes to affected files; unchanged existing findings remain counted debt. Installation alone does not activate branch enforcement.

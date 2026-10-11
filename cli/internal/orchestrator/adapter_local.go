@@ -29,6 +29,7 @@ const (
 // LocalAdapter runs scanners directly via Docker/Podman.
 type LocalAdapter struct {
 	runtime     string // "docker" or "podman"
+	ciMode      bool   // ignore source-controlled scanner suppressions in CI
 	historyScan bool   // scan full git history instead of working tree
 	noCache     bool   // disable file statistics cache; scans always execute
 }
@@ -40,6 +41,9 @@ func NewLocalAdapter(historyScan bool) *LocalAdapter {
 	noCache := os.Getenv("KURO_NO_CACHE") == "1" || os.Getenv("KURO_NO_CACHE") == "true"
 	return &LocalAdapter{runtime: r, historyScan: historyScan, noCache: noCache}
 }
+
+// SetCIMode disables source-controlled scanner suppression configuration.
+func (a *LocalAdapter) SetCIMode(enabled bool) { a.ciMode = enabled }
 
 // SetNoCache enables or disables the file change cache.
 func (a *LocalAdapter) SetNoCache(noCache bool) {

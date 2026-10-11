@@ -36,6 +36,7 @@ func RunScan(args []string) {
 	remoteFlag := fs.Bool("remote", false, "Force remote mode (send to server)")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format")
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
+	ciFlag := fs.Bool("ci", false, "Ignore source-controlled scanner suppressions for trusted CI")
 	noCacheFlag := fs.Bool("no-cache", false, "Disable file statistics cache (scanners always run)")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
@@ -100,6 +101,7 @@ func RunScan(args []string) {
 	} else if isLocalPath(target) {
 		history := *historyFlag
 		local := orchestrator.NewLocalAdapter(history)
+		local.SetCIMode(*ciFlag)
 		if *noCacheFlag {
 			local.SetNoCache(true)
 		}

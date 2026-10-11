@@ -10,9 +10,13 @@ import (
 // ── Scanners ───────────────────────────────────────────────
 
 func (a *LocalAdapter) runGitleaks(ctx context.Context, path string) ([]Finding, error) {
+	args := []string{"dir", "--report-format=json", "--report-path=/proc/self/fd/1", "/src"}
+	if a.ciMode {
+		args = append(args, "--ignore-gitleaks-allow", "--gitleaks-ignore-path=/dev/null")
+	}
 	output, err := a.runContainer(ctx,
 		gitleaksImage,
-		[]string{"dir", "--report-format=json", "--report-path=/proc/self/fd/1", "/src"},
+		args,
 		map[string]string{path: "/src:ro,Z"},
 	)
 	findings, parseErr := parseGitleaksOutput(output)
@@ -62,9 +66,12 @@ func (a *LocalAdapter) runTrivy(ctx context.Context, path string) ([]Finding, er
 	if err := validateTrivyDB(cacheDir, time.Now()); err != nil {
 		return nil, err
 	}
-	output, err := a.runContainer(ctx, trivyImage,
-		[]string{"fs", "--scanners=vuln", "--format=json", "--exit-code=0", "--cache-dir=/trivy-cache",
-			"--skip-db-update", "--skip-java-db-update", "--offline-scan", "/src"},
+	args := []string{"fs", "--scanners=vuln", "--format=json", "--exit-code=0", "--cache-dir=/trivy-cache",
+		"--skip-db-update", "--skip-java-db-update", "--offline-scan", "/src"}
+	if a.ciMode {
+		args = append(args, "--ignorefile=/dev/null")
+	}
+	output, err := a.runContainer(ctx, trivyImage, args,
 		map[string]string{path: "/src:ro,Z", cacheDir: "/trivy-cache:Z"})
 	if err != nil {
 		return nil, err
