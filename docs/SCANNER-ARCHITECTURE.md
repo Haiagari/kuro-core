@@ -25,7 +25,7 @@ Every scan container uses `--rm`, `--network=none`, `--cap-drop=ALL`, `--securit
 The container runner preserves process errors even when stdout exists. Gitleaks exit 1 is accepted only with a successfully parsed, nonempty findings report and no canceled context. Other configured scanners must exit 0. Checkov's `--soft-fail` delegates finding policy to Core; it does not suppress infrastructure/parse errors in Core.
 
 - Gitleaks: `dir --report-format=json --report-path=/proc/self/fd/1 /src`, or `detect --source=/src` for history.
-- Semgrep: `semgrep scan --config=/kuro-rules/semgrep-core.yml --metrics=off --strict --max-memory 350 --json /src`. Reported analysis errors block. No `--config=auto`.
+- Semgrep: `semgrep scan --config=/kuro-rules/semgrep-core.yml --metrics=off --disable-version-check --jobs=1 --strict --max-memory 350 --json /src`. Reported analysis errors block. No `--config=auto`.
 - Checkov: configured for Terraform/Dockerfile with `--skip-download`; native report object or report array with `results.failed_checks`; parsing errors block. A flat finding array is rejected.
 - TruffleHog: `git file:///src --json --no-update --no-verification --concurrency 1`. Malformed NDJSON blocks. Offline detections are not proof that a credential is active.
 - Trivy: vulnerability scanner only; offline invocation described below. Missing report structure or process failure blocks.

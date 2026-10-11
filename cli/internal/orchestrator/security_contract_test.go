@@ -215,10 +215,21 @@ func TestTrufflehogNativeGitMetadata(t *testing.T) {
 }
 
 func TestSemgrepConfigurationFailureIncludesDiagnostic(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args")
+	t.Setenv("KURO_TEST_ARGS", argsFile)
 	runtime := filepath.Join(t.TempDir(), "runtime")
-	os.WriteFile(runtime, []byte("#!/bin/sh\nprintf '%s' '{\"errors\":[{\"message\":\"Invalid YAML rule\"}],\"results\":[]}'\nexit 7\n"), 0755)
+	os.WriteFile(runtime, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$KURO_TEST_ARGS\"\nprintf '%s' '{\"errors\":[{\"message\":\"Invalid YAML rule\"}],\"results\":[]}'\nexit 7\n"), 0755)
 	a := &LocalAdapter{runtime: runtime}
 	if _, err := a.runSemgrep(context.Background(), t.TempDir()); err == nil || !strings.Contains(err.Error(), "Invalid YAML rule") {
 		t.Fatalf("missing scanner configuration diagnostic: %v", err)
+	}
+	args, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, flag := range []string{"--disable-version-check", "--jobs=1", "--metrics=off", "--strict"} {
+		if !strings.Contains(string(args), flag) {
+			t.Fatalf("missing offline scanner flag %s: %s", flag, args)
+		}
 	}
 }
