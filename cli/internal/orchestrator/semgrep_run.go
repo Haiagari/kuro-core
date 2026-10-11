@@ -26,6 +26,7 @@ func (a *LocalAdapter) runSemgrep(ctx context.Context, path string) ([]Finding, 
 			"semgrep", "scan",
 			"--config=/kuro-rules/semgrep-core.yml",
 			"--metrics=off",
+			"--strict",
 			"--max-memory", "350",
 			"--json",
 			"/src",
@@ -36,9 +37,7 @@ func (a *LocalAdapter) runSemgrep(ctx context.Context, path string) ([]Finding, 
 		},
 	)
 	if err != nil {
-		if len(output) == 0 {
-			return nil, fmt.Errorf("semgrep produced no output: %w", err)
-		}
+		return nil, err
 	}
 
 	return parseSemgrepOutput(output)

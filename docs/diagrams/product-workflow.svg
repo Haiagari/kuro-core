@@ -81,7 +81,7 @@
     <g transform="translate(14, 76)">
       <rect width="162" height="42" rx="6" fill="#060911" stroke="#1e293b" stroke-width="1"/>
       <text x="10" y="18" class="badge" fill="#94a3b8">TRIGGER A</text>
-      <text x="10" y="33" class="code">git push origin</text>
+      <text x="10" y="33" class="code">git push proxy</text>
     </g>
 
     <g transform="translate(14, 126)">
@@ -93,9 +93,9 @@
     <g transform="translate(14, 180)">
       <rect width="162" height="74" rx="6" fill="#060911" stroke="#1e293b" stroke-width="1"/>
       <text x="10" y="20" font-size="10" font-weight="700" fill="#e2e8f0">Target Scope:</text>
-      <text x="10" y="38" font-size="10" font-weight="500" fill="#64748b">• Working tree / Staged</text>
+      <text x="10" y="38" font-size="10" font-weight="500" fill="#64748b">• Working tree (default)</text>
       <text x="10" y="52" font-size="10" font-weight="500" fill="#64748b">• Full history (--history)</text>
-      <text x="10" y="66" font-size="10" font-weight="500" fill="#64748b">• Differential file cache</text>
+      <text x="10" y="66" font-size="10" font-weight="500" fill="#64748b">• File hash statistics</text>
     </g>
   </g>
 
@@ -135,7 +135,7 @@
         <rect width="192" height="42" rx="6" fill="#0d1527" stroke="#1e293b" stroke-width="1"/>
         <text x="10" y="18" font-size="11" font-weight="700" fill="#ffffff">🔒 Secrets</text>
         <text x="82" y="18" font-size="10" font-weight="600" fill="#38bdf8">Gitleaks</text>
-        <text x="10" y="33" font-size="9.5" font-weight="500" fill="#94a3b8">Zero-leakage ruleset</text>
+        <text x="10" y="33" font-size="9.5" font-weight="500" fill="#94a3b8">Secret detection rules</text>
       </g>
 
       <!-- Scanner 3: SCA -->
@@ -162,7 +162,7 @@
         <circle cx="6" cy="6" r="4" fill="#00f2fe"/>
         <text x="18" y="10" font-size="12" font-weight="800" fill="#ffffff">Embedded Policy Engine</text>
         <text x="195" y="10" class="code">(default-policy.json)</text>
-        <text x="0" y="30" font-size="10" font-weight="500" fill="#94a3b8">Deduplication (SHA-256 + Jaccard) → Severity Evaluation → Fail-Closed Gate</text>
+        <text x="0" y="30" font-size="10" font-weight="500" fill="#94a3b8">Native Reports → Policy Evaluation → Fail-Closed Gate</text>
       </g>
     </g>
   </g>
@@ -181,7 +181,7 @@
     <text x="36" y="26" font-size="13" font-weight="800" fill="#ffffff">PASS</text>
     <text x="96" y="26" class="badge" fill="#10b981">(exit 0)</text>
     <text x="14" y="46" font-size="10" font-weight="600" fill="#34d399">Clean / policy approved</text>
-    <text x="14" y="58" font-size="9.5" font-weight="500" fill="#6ee7b7">Differential cache saved</text>
+    <text x="14" y="58" font-size="9.5" font-weight="500" fill="#6ee7b7">File statistics saved</text>
   </g>
 
   <!-- Branch B: REVIEW -->

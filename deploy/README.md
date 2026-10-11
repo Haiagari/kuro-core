@@ -5,9 +5,9 @@
 
 | Path | Purpose |
 |---|---|
-| `policies/` | Static gate policy (`default-policy.json`) used by the local orchestrator |
+| `policies/` | Reference copy; runtime embeds `cli/internal/orchestrator/rules/default-policy.json` |
 | `security/` | Scanner-oriented base configs (e.g. Gitleaks / Semgrep helpers) |
-| `install.sh` | Legacy/alternate installer helper — prefer [`scripts/install.sh`](../scripts/install.sh) documented in the README |
+| `install.sh` | Compatibility wrapper delegating to [`scripts/install.sh`](../scripts/install.sh) documented in the README |
 
 For product install and happy path, see:
 

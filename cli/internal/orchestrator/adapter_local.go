@@ -1,6 +1,5 @@
 package orchestrator
 
-
 import (
 	"context"
 	"errors"
@@ -18,11 +17,11 @@ import (
 
 const (
 	// docker.io/ prefix ensures Podman resolves from Docker Hub, not localhost
-	gitleaksImage        = "docker.io/zricethezav/gitleaks:v8.30.1"
-	semgrepImage         = "docker.io/semgrep/semgrep:1.165.0"
-	trivyImage           = "docker.io/aquasec/trivy:0.57.0"
-	checkovImage         = "docker.io/bridgecrew/checkov:3.2.400"
-	trufflehogImage      = "docker.io/trufflesecurity/trufflehog:3.81.0"
+	gitleaksImage   = "docker.io/zricethezav/gitleaks:v8.30.1"
+	semgrepImage    = "docker.io/semgrep/semgrep:1.165.0"
+	trivyImage      = "docker.io/aquasec/trivy:0.57.0"
+	checkovImage    = "docker.io/bridgecrew/checkov:3.2.400"
+	trufflehogImage = "docker.io/trufflesecurity/trufflehog:3.81.0"
 )
 
 // ── LocalAdapter ───────────────────────────────────────────
@@ -31,7 +30,7 @@ const (
 type LocalAdapter struct {
 	runtime     string // "docker" or "podman"
 	historyScan bool   // scan full git history instead of working tree
-	noCache     bool   // bypass change cache and force full scan
+	noCache     bool   // disable file statistics cache; scans always execute
 }
 
 // NewLocalAdapter creates a local adapter by detecting the available runtime.
@@ -115,7 +114,10 @@ func (a *LocalAdapter) Scope(ctx context.Context, target string) ([]string, erro
 
 	// ── File change cache ──────────────────────────────────
 	var totalFiles, cachedFiles, newFiles int
-	cache := openFileCache()
+	var cache *FileCache
+	if !a.noCache {
+		cache = openFileCache()
+	}
 	if cache != nil {
 		filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
@@ -138,10 +140,16 @@ func (a *LocalAdapter) Scope(ctx context.Context, target string) ([]string, erro
 	}
 
 	// ── Scanner detection ──────────────────────────────────
-	// Detect if there are dependencies for Trivy/Syft/Grype
+	// Detect dependency manifests supported by the Core scoping contract.
 	hasLockFile := false
-	filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	if err := filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if info.IsDir() {
 			return nil
 		}
 		name := info.Name()
@@ -150,7 +158,9 @@ func (a *LocalAdapter) Scope(ctx context.Context, target string) ([]string, erro
 			hasLockFile = true
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("scope files: %w", err)
+	}
 
 	if hasLockFile {
 		scanners = append(scanners, "trivy")
@@ -158,26 +168,30 @@ func (a *LocalAdapter) Scope(ctx context.Context, target string) ([]string, erro
 
 	// Detect if there is a Dockerfile for Checkov
 	hasDockerfile := false
-	filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	if err := filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if info.IsDir() {
 			return nil
 		}
 		if info.Name() == "Dockerfile" || strings.HasSuffix(info.Name(), ".tf") {
 			hasDockerfile = true
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("scope files: %w", err)
+	}
 
 	if hasDockerfile {
 		scanners = append(scanners, "checkov")
 	}
 
 	// ── Print file stats ───────────────────────────────────
-	if cache != nil && !a.noCache && totalFiles > 0 {
-		if newFiles == 0 && cachedFiles > 0 {
-			fmt.Fprintf(os.Stderr, "  %d files · %d cached · 0 new (clean cache hit)\n", totalFiles, cachedFiles)
-			return nil, nil
-		}
+	if cache != nil && totalFiles > 0 {
 		fmt.Fprintf(os.Stderr, "  %d files · %d cached · %d new\n", totalFiles, cachedFiles, newFiles)
 	}
 
@@ -191,7 +205,11 @@ func openFileCache() *FileCache {
 	if err != nil {
 		return nil
 	}
-	cache, err := NewFileCache(filepath.Join(home, ".kuro", "cache"))
+	dir := os.Getenv("KURO_CACHE_DIR")
+	if dir == "" {
+		dir = filepath.Join(home, ".kuro", "cache")
+	}
+	cache, err := NewFileCache(dir)
 	if err != nil {
 		return nil
 	}
@@ -262,6 +280,8 @@ func (a *LocalAdapter) Run(ctx context.Context, target string, scanners []string
 				findings, err = a.runTrivy(scanCtx, target)
 			case "checkov":
 				findings, err = a.runCheckov(scanCtx, target)
+			default:
+				err = fmt.Errorf("unknown scanner %q", scanner)
 			}
 
 			results <- scanResult{

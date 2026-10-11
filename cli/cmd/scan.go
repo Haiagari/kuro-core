@@ -1,6 +1,5 @@
 package cmd
 
-
 import (
 	"context"
 	"flag"
@@ -36,7 +35,7 @@ func RunScan(args []string) {
 	remoteFlag := fs.Bool("remote", false, "Force remote mode (send to server)")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format")
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
-	noCacheFlag := fs.Bool("no-cache", false, "Disable file change cache")
+	noCacheFlag := fs.Bool("no-cache", false, "Disable file statistics cache (scanners always run)")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
 	// Go's flag package stops at the first non-flag; docs/examples use `scan PATH --json`.
@@ -164,7 +163,6 @@ func RunScan(args []string) {
 		os.Exit(code)
 	}
 }
-
 
 // reorderFlagsBeforeArgs moves leading-dash tokens before positionals so
 // `kuro scan ./path --json` works the same as `kuro scan --json ./path`.

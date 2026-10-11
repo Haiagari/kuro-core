@@ -1,6 +1,5 @@
 package orchestrator
 
-
 import (
 	"context"
 	"os"
@@ -92,8 +91,8 @@ func TestParseGitleaksOutput(t *testing.T) {
 
 	t.Run("null input returns error", func(t *testing.T) {
 		_, err := parseGitleaksOutput([]byte(`null`))
-		if err != nil {
-			t.Fatal("expected null to be valid (empty slice)")
+		if err == nil {
+			t.Fatal("null is not a valid Gitleaks report")
 		}
 	})
 
@@ -180,14 +179,11 @@ func TestParseSemgrepOutput(t *testing.T) {
 		}
 	})
 
-	t.Run("missing results key returns empty", func(t *testing.T) {
+	t.Run("missing results key returns error", func(t *testing.T) {
 		data := []byte(`{"errors": []}`)
-		findings, err := parseSemgrepOutput(data)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(findings) != 0 {
-			t.Errorf("expected 0 findings, got %d", len(findings))
+		_, err := parseSemgrepOutput(data)
+		if err == nil {
+			t.Fatal("missing results must fail closed")
 		}
 	})
 }
@@ -341,9 +337,7 @@ func TestParseCheckovOutput(t *testing.T) {
 	})
 
 	t.Run("missing file_line_range uses zero", func(t *testing.T) {
-		data := []byte(`[
-			{"check_id": "CKV_1", "check_name": "test", "file_path": "main.tf", "severity": "LOW", "description": ""}
-		]`)
+		data := []byte(`{"check_type":"terraform","results":{"failed_checks":[{"check_id":"CKV_1","check_name":"test","file_path":"main.tf","severity":"LOW"}]}}`)
 		findings, err := parseCheckovOutput(data)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -435,6 +429,7 @@ func TestLocalAdapter_RunHonorsContextCancellation(t *testing.T) {
 }
 
 func TestLocalAdapter_ScopeDifferentialCache(t *testing.T) {
+	t.Setenv("KURO_CACHE_DIR", t.TempDir())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "app.go")
 	if err := os.WriteFile(testFile, []byte("package main\nfunc main() {}\n"), 0644); err != nil {
@@ -455,13 +450,13 @@ func TestLocalAdapter_ScopeDifferentialCache(t *testing.T) {
 	// 2. Commit cache (simulating clean pass)
 	adapter.CommitCache(tmpDir)
 
-	// 3. Second scope without file edits: clean cache hit, should return 0 scanners
+	// 3. Cached files never bypass current scanners/policies.
 	cachedScanners, err := adapter.Scope(context.Background(), tmpDir)
 	if err != nil {
 		t.Fatalf("unexpected Scope error on cache hit: %v", err)
 	}
-	if len(cachedScanners) != 0 {
-		t.Fatalf("expected 0 scanners on clean cache hit, got %v", cachedScanners)
+	if len(cachedScanners) == 0 {
+		t.Fatalf("cached files must still run scanners, got %v", cachedScanners)
 	}
 
 	// 4. Force no-cache: should return scanners even if unchanged

@@ -1,134 +1,60 @@
-# Cryptographic Attestation — Kuro Core v0.1.1
+# Attestation inspection and verification — development branch
 
-**Audience:** developers and release engineers verifying supply-chain gate attestations offline.  
-**Scope:** Core CLI (`kuro attest`). Signing infrastructure that *issues* production attestations may live in Enterprise; Core focuses on **verify / keygen / inspect**.
+Core verifies an existing envelope; a scan does not automatically issue an attestation. These commands do not demonstrate a SLSA level or validate a complete SLSA provenance predicate.
 
-| Spec | Value |
+## Inspect untrusted content
+
+```bash
+kuro attest inspect ./attestation.json
+```
+
+Decodes a supported envelope and valid JSON payload. Output is explicitly **UNVERIFIED**. No signature, decision authenticity or commit binding is checked.
+
+## Verify a signature and commit binding
+
+```bash
+# HEAD is resolved in the selected repository:
+kuro attest verify --repo ./project --pubkey ./attestation.pub
+# A standalone file needs an expected full commit digest, or a resolvable ref:
+kuro attest verify --file ./attestation.json --commit <FULL_COMMIT_SHA> --pubkey ./attestation.pub
+```
+
+`--pubkey` or `KURO_ATTESTATION_PUBLIC_KEY` is required: a trusted 32-byte Ed25519 public key encoded as 64 hex characters, or a file containing it. The key must be obtained independently from a trusted issuer. `keyid` is only a hint; it is never a trust authority.
+
+| Option | Default |
 |---|---|
-| Statement | in-toto Statement v1 / SLSA-style provenance |
-| Predicate type (conceptual) | `https://kuro.dev/attestation/security-gate/v1` |
-| Signature | Ed25519 |
-| Git notes ref | `refs/notes/kuro-attestation` |
+| `--commit` / `-c` | HEAD |
+| `--repo` / `-r` | . |
+| `--file` / `-f` | Read Git note on `refs/notes/kuro-attestation` |
+| `--pubkey` / `-p` | KURO_ATTESTATION_PUBLIC_KEY; absence is an error |
+| `--legacy-raw` | false; explicit historical format compatibility |
 
-Related: [API.md](API.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [../QUICKSTART.md](../QUICKSTART.md)
+Verification checks the supported payload type, at least one signature against the supplied key, the statement and predicate types, required security-gate fields, and a subject digest matching the expected full SHA-1/SHA-256 commit. A note copied onto a different commit is rejected. Standalone files with a full digest can be verified without a local repository. Repository identity, issuer authorization beyond the trusted key, predicate freshness and the expected policy hash are not independently enforced.
 
----
+| Outcome | Exit |
+|---|---:|
+| Valid signature/binding with PASS or APPROVED (case-insensitive) | 0 |
+| Valid signature/binding with REVIEW, BLOCK, BLOCKED or DENY | 2 |
+| Missing key/note, malformed content, unknown decision, bad signature or wrong commit | 1 |
 
-## Overview
+## Signature format
 
-When a security gate approves a commit, an in-toto statement (decision, scanners, policy hash, issuer, timestamp) can be wrapped in a signed DSSE-like JSON envelope and stored either:
+Default verification uses Ed25519 over **DSSE Pre-Authentication Encoding (PAE)**:
 
-- as a **git note** on `refs/notes/kuro-attestation`, or
-- as a **standalone JSON file**.
+`DSSEv1 <type-byte-length> <payloadType> <payload-byte-length> <payload-bytes>`
 
-`kuro attest verify` reads that envelope, optionally checks the Ed25519 signature against a public key, and prints the predicate. No server is required for verification.
+Envelope `payloadType` must be `application/vnd.in-toto+json`. Payload `_type` must be `https://in-toto.io/Statement/v1`, and `predicateType` must be `https://kuro.dev/attestation/security-gate/v1`. Each subject requires a name and full `digest.commit`. The predicate requires decision, scan_id, scanners, issuer, issued_at and a SHA-256 policy_hash. Standard/URL-safe padded or unpadded base64 is accepted. Any valid signature under the supplied key satisfies the single-key trust model.
 
-```
-Git commit (HEAD)
-        │
-        ▼
-kuro attest verify [--pubkey …]
-        │
-        ├─ git notes --ref=refs/notes/kuro-attestation show <commit>
-        │     or --file envelope.json
-        ▼
-Decode payload → optional Ed25519 verify → print decision / scanners / issued_at
-```
+Historical Core envelopes signed raw statement bytes instead of PAE. They are rejected by default. Use `--legacy-raw` only for a knowingly trusted historical issuer; output labels this format as **not DSSE**. No automatic downgrade is attempted.
 
----
-
-## Commands
-
-### Generate a keypair (local / test)
+## Keys and Git notes
 
 ```bash
 kuro attest keygen
+# Fetch existing notes when using the note workflow:
+git fetch origin refs/notes/kuro-attestation:refs/notes/kuro-attestation
 ```
 
-Prints:
+Key generation prints the private key to the terminal. Keep it out of logs and source control. Core does not provide managed key storage, issuance, rotation or revocation.
 
-- Key ID (SHA-256 fingerprint prefix)
-- Public key (hex, safe to distribute / set as `KURO_ATTESTATION_PUBLIC_KEY`)
-- Private key (hex — keep secret; Enterprise signing often uses `KURO_ATTESTATION_PRIVATE_KEY`)
-
-### Verify a commit note
-
-```bash
-# Public key from env or flag (hex string or path to file containing hex)
-export KURO_ATTESTATION_PUBLIC_KEY="$(cat attestation.pub)"
-
-kuro attest verify
-kuro attest verify --commit abc1234 --repo /path/to/repo
-kuro attest verify --pubkey /path/to/attestation.pub
-kuro attest verify --commit HEAD --pubkey "$KURO_ATTESTATION_PUBLIC_KEY"
-```
-
-Flags:
-
-| Flag | Default | Meaning |
-|---|---|---|
-| `--commit` / `-c` | `HEAD` | Commit SHA |
-| `--repo` / `-r` | `.` | Git repository path |
-| `--pubkey` / `-p` | `$KURO_ATTESTATION_PUBLIC_KEY` | 32-byte Ed25519 public key (hex or file) |
-| `--file` / `-f` | — | Standalone envelope JSON instead of git notes |
-
-**Expected success output:** `VERIFIED KURO CRYPTOGRAPHIC ATTESTATION` plus decision, scan ID, scanners, issuer, issued-at, commit digest.
-
-**Exit codes:**
-
-| Situation | Code |
-|---|---|
-| Signature OK and decision `PASS` / `APPROVED` | `0` |
-| Missing note / malformed envelope / bad signature / invalid key | `1` |
-| Signature OK but decision is not PASS/APPROVED | `2` (warning) |
-
-If `--pubkey` / env is omitted, Core still decodes and prints the statement but **skips** cryptographic verification.
-
-### Verify a standalone file
-
-```bash
-kuro attest verify --file ./kuro-attestation.json --pubkey ./attestation.pub
-```
-
-### Inspect (decode only)
-
-```bash
-kuro attest inspect ./kuro-attestation.json
-```
-
-Pretty-prints the base64-decoded in-toto statement from the envelope. Does not require a public key.
-
----
-
-## Envelope shape (conceptual)
-
-```json
-{
-  "payloadType": "application/vnd.in-toto+json",
-  "payload": "<base64 in-toto statement>",
-  "signatures": [
-    { "keyid": "…", "sig": "<base64 Ed25519 over raw statement bytes>" }
-  ]
-}
-```
-
-Decoded statement subjects typically include a commit digest; the Kuro predicate includes fields such as `decision`, `scan_id`, `scanners`, `policy_hash`, `issued_at`, `issuer`.
-
----
-
-## Prerequisites & pitfalls
-
-| Pitfall | Guidance |
-|---|---|
-| No note on commit | Ensure notes were pushed/fetched: `git fetch origin refs/notes/kuro-attestation:refs/notes/kuro-attestation` |
-| Invalid public key | Must be 32-byte hex (64 hex chars), not PEM |
-| Verify without pubkey | Decodes only — do not treat as cryptographic proof |
-| Expecting Core to *mint* production attestations | Issuance is typically an Enterprise/gatekeeper concern; Core ships verify/keygen/inspect |
-
----
-
-## See also
-
-- [API.md](API.md) — CLI surface summary
-- [ARCHITECTURE.md](ARCHITECTURE.md) — where attestation sits in the product
-- [../SECURITY.md](../SECURITY.md) — reporting crypto bugs
+Protocol reference: [DSSE protocol](https://github.com/secure-systems-lab/dsse/blob/master/protocol.md). Related: [API](API.md), [architecture](ARCHITECTURE.md), [security reporting](../SECURITY.md).

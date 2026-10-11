@@ -41,12 +41,11 @@ Attestation is a separate verification surface, not an issuance step in this dem
 
 ```bash
 ./bin/kuro attest inspect ./attestation.json
-./bin/kuro attest verify --file ./attestation.json
-./bin/kuro attest verify --file ./attestation.json --pubkey ./attestation.pub
+./bin/kuro attest verify --file ./attestation.json --commit <FULL_COMMIT_SHA> --pubkey ./attestation.pub
 ```
 
 - `inspect` decodes and pretty-prints the in-toto statement; it does not verify a signature.
-- `verify` can read a standalone envelope. With `--pubkey` (or `KURO_ATTESTATION_PUBLIC_KEY`) it checks the Ed25519 signature. Without a public key it decodes the statement but skips cryptographic verification; do not present that as cryptographic proof.
+- `verify` can read a standalone envelope. It requires `--pubkey` (or `KURO_ATTESTATION_PUBLIC_KEY`) and checks the Ed25519 DSSE PAE signature plus the expected commit binding. Without a public key it fails; use `inspect` for unverified decoding. Historical raw-payload signatures require explicit `--legacy-raw`.
 - The commands above inspect or verify an existing envelope. They do not mint a production attestation, and the demo does not claim that a local scan automatically issues one.
 
 ## What this validates

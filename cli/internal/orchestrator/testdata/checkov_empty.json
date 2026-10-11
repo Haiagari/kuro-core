@@ -1,1 +1,10 @@
-[]
+{
+  "check_type": "dockerfile",
+  "results": {
+    "failed_checks": [],
+    "parsing_errors": []
+  },
+  "summary": {
+    "parsing_errors": 0
+  }
+}

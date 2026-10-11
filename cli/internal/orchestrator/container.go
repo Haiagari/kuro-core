@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -17,13 +18,15 @@ func (a *LocalAdapter) runContainer(ctx context.Context, image string, args []st
 	cmdArgs = append(cmdArgs, args...)
 
 	cmd := exec.CommandContext(ctx, a.runtime, cmdArgs...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	stdout, err := cmd.Output()
 	if err != nil {
-		// Most scanners exit 1 when findings exist. Return stdout anyway.
-		if stdout != nil && len(stdout) > 0 {
-			return stdout, nil
+		if ctx.Err() != nil {
+			return stdout, fmt.Errorf("container canceled: %w", ctx.Err())
 		}
-		return nil, fmt.Errorf("container exited: %w", err)
+		// Only individual adapters may accept a scanner's documented finding exit.
+		return stdout, fmt.Errorf("container exited: %w (%s)", err, stderr.String())
 	}
 	return stdout, nil
 }

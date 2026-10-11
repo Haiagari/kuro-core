@@ -14,7 +14,7 @@ Related: [docs/SCANNER-ARCHITECTURE.md](docs/SCANNER-ARCHITECTURE.md) · [CONTRI
 | v0.1.x  | Active development & security fixes |
 | < v0.1  | Not supported |
 
-Docs and installers currently target **v0.1.1**.
+Docs describe development source, including unreleased security changes. Published binary availability must be checked separately; source labels alone are not release assets.
 
 ---
 

@@ -2,96 +2,153 @@ package cmd
 
 import (
 	"crypto/ed25519"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
 
-func TestAttest_VerifyValidGitNote(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not found in PATH")
+const testCommit = "0123456789012345678901234567890123456789"
+
+func signedAttestation(t *testing.T, priv ed25519.PrivateKey, commit, decision string, legacy bool) []byte {
+	t.Helper()
+	stmt := map[string]any{
+		"_type": "https://in-toto.io/Statement/v1", "predicateType": attestationPredicateType,
+		"subject":   []any{map[string]any{"name": "https://github.com/Haiagari/kuro-core.git", "digest": map[string]string{"commit": commit}}},
+		"predicate": map[string]any{"decision": decision, "scan_id": "test-scan", "scanners": []string{"gitleaks"}, "policy_hash": strings.Repeat("0", 64), "issued_at": time.Now().UTC(), "issuer": "test gate"},
 	}
-
-	tmpDir := t.TempDir()
-
-	// Initialize temp git repository
-	exec.Command("git", "-C", tmpDir, "init").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.email", "attest@kuro.dev").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.name", "Kuro Attest").Run()
-	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "Commit to attest").Run()
-
-	out, err := exec.Command("git", "-C", tmpDir, "rev-parse", "HEAD").Output()
+	payload, err := json.Marshal(stmt)
 	if err != nil {
-		t.Fatalf("failed to get commit SHA: %v", err)
+		t.Fatal(err)
 	}
-	commitSHA := string(out[:len(out)-1])
-
-	// Create keypair
+	signed := dssePAE(attestationPayloadType, payload)
+	if legacy {
+		signed = payload
+	}
+	env := map[string]any{"payloadType": attestationPayloadType, "payload": base64.StdEncoding.EncodeToString(payload), "signatures": []any{map[string]string{"sig": base64.StdEncoding.EncodeToString(ed25519.Sign(priv, signed))}}}
+	data, err := json.Marshal(env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+func mutateEnvelope(t *testing.T, data []byte, mutate func(map[string]any)) []byte {
+	t.Helper()
+	var env map[string]any
+	if err := json.Unmarshal(data, &env); err != nil {
+		t.Fatal(err)
+	}
+	mutate(env)
+	result, err := json.Marshal(env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+func TestAttestationSignatureAndCommitBinding(t *testing.T) {
 	pub, priv, _ := ed25519.GenerateKey(nil)
-	pubHex := hex.EncodeToString(pub)
-
-	// Build in-toto statement
-	stmt := map[string]interface{}{
-		"_type": "https://in-toto.io/Statement/v1",
-		"subject": []map[string]interface{}{
-			{
-				"name": "https://github.com/Haiagari/kuro.git",
-				"digest": map[string]string{
-					"commit": commitSHA,
-				},
-			},
-		},
-		"predicateType": "https://kuro.dev/attestation/security-gate/v1",
-		"predicate": map[string]interface{}{
-			"decision":    "PASS",
-			"scan_id":     "00000000-0000-0000-0000-000000000001",
-			"scanners":    []string{"gitleaks", "semgrep", "trivy"},
-			"policy_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			"issued_at":   time.Now().UTC().Format(time.RFC3339),
-			"issuer":      "Kuro Security Gatekeeper v1.5.0",
-		},
+	otherPub, _, _ := ed25519.GenerateKey(nil)
+	data := signedAttestation(t, priv, testCommit, "PASS", false)
+	cases := []struct {
+		name    string
+		data    []byte
+		key     ed25519.PublicKey
+		commit  string
+		legacy  bool
+		wantErr bool
+	}{
+		{"valid", data, pub, testCommit, false, false},
+		{"wrong key", data, otherPub, testCommit, false, true},
+		{"missing key", data, nil, testCommit, false, true},
+		{"wrong commit", data, pub, strings.Repeat("a", 40), false, true},
+		{"abbreviated commit", data, pub, "0123456", false, true},
+		{"missing signatures", mutateEnvelope(t, data, func(e map[string]any) { e["signatures"] = []any{} }), pub, testCommit, false, true},
+		{"malformed signature", mutateEnvelope(t, data, func(e map[string]any) { e["signatures"] = []any{map[string]string{"sig": "!bad"}} }), pub, testCommit, false, true},
+		{"wrong type", mutateEnvelope(t, data, func(e map[string]any) { e["payloadType"] = "application/json" }), pub, testCommit, false, true},
+		{"changed payload", mutateEnvelope(t, data, func(e map[string]any) { e["payload"] = base64.StdEncoding.EncodeToString([]byte(`{}`)) }), pub, testCommit, false, true},
+		{"legacy rejected by default", signedAttestation(t, priv, testCommit, "PASS", true), pub, testCommit, false, true},
+		{"legacy explicit", signedAttestation(t, priv, testCommit, "PASS", true), pub, testCommit, true, false},
+		{"DSSE rejected in legacy mode", data, pub, testCommit, true, true},
 	}
-
-	stmtBytes, _ := json.Marshal(stmt)
-	payloadB64 := base64.StdEncoding.EncodeToString(stmtBytes)
-	sigBytes := ed25519.Sign(priv, stmtBytes)
-
-	pubHash := sha256.Sum256(pub)
-	keyID := hex.EncodeToString(pubHash[:8])
-
-	envelope := map[string]interface{}{
-		"payloadType": "application/vnd.in-toto+json",
-		"payload":     payloadB64,
-		"signatures": []map[string]string{
-			{
-				"keyid": keyID,
-				"sig":   base64.StdEncoding.EncodeToString(sigBytes),
-			},
-		},
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := verifyAttestation(tc.data, tc.key, tc.commit, tc.legacy)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("%v", err)
+			}
+		})
 	}
-
-	envJSON, _ := json.Marshal(envelope)
-
-	// Attach git note
-	noteCmd := exec.Command("git", "-C", tmpDir, "notes", "--ref=refs/notes/kuro-attestation", "add", "-f", "-m", string(envJSON), commitSHA)
-	if err := noteCmd.Run(); err != nil {
-		t.Fatalf("failed to add git note: %v", err)
+}
+func TestAttestationAcceptsLaterValidSignatureAndURLBase64(t *testing.T) {
+	pub, priv, _ := ed25519.GenerateKey(nil)
+	data := signedAttestation(t, priv, testCommit, "PASS", false)
+	data = mutateEnvelope(t, data, func(e map[string]any) {
+		payload, _ := base64.StdEncoding.DecodeString(e["payload"].(string))
+		e["payload"] = base64.RawURLEncoding.EncodeToString(payload)
+		signatures := e["signatures"].([]any)
+		sig := signatures[0].(map[string]any)
+		bytes, _ := base64.StdEncoding.DecodeString(sig["sig"].(string))
+		sig["sig"] = base64.RawURLEncoding.EncodeToString(bytes)
+		e["signatures"] = append([]any{map[string]string{"sig": "invalid"}}, signatures...)
+	})
+	if _, err := verifyAttestation(data, pub, testCommit, false); err != nil {
+		t.Fatal(err)
 	}
-
-	// Verify using standalone file logic
-	attestFilePath := filepath.Join(tmpDir, "attestation.json")
-	os.WriteFile(attestFilePath, envJSON, 0644)
-
-	// Ensure signature verifies with our public key
-	if !ed25519.Verify(pub, stmtBytes, sigBytes) {
-		t.Fatal("expected signature verification to succeed")
+}
+func TestDSSEPAEReferenceVector(t *testing.T) {
+	if got := string(dssePAE("http://example.com/HelloWorld", []byte("hello world"))); got != "DSSEv1 29 http://example.com/HelloWorld 11 hello world" {
+		t.Fatal(got)
 	}
-
-	_ = pubHex
+}
+func TestAttestCommandRequiresKeyAndReturnsDecisionCode(t *testing.T) {
+	t.Setenv("KURO_ATTESTATION_PUBLIC_KEY", "")
+	if _, err := verifyAttestationCommand([]string{"--file", "unused"}); err == nil {
+		t.Fatal("verify without key accepted")
+	}
+	pub, priv, _ := ed25519.GenerateKey(nil)
+	file := filepath.Join(t.TempDir(), "attestation.json")
+	for _, tc := range []struct {
+		decision string
+		code     int
+	}{{"PASS", 0}, {"review", 2}, {"BLOCK", 2}} {
+		os.WriteFile(file, signedAttestation(t, priv, testCommit, tc.decision, false), 0644)
+		code, err := verifyAttestationCommand([]string{"--file", file, "--commit", testCommit, "--pubkey", hex.EncodeToString(pub)})
+		if err != nil || code != tc.code {
+			t.Fatalf("%s code=%d err=%v", tc.decision, code, err)
+		}
+	}
+}
+func TestAttestVerifyRealGitNoteAndRejectReplay(t *testing.T) {
+	dir := t.TempDir()
+	git := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git: %v %s", err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git("init")
+	git("config", "user.name", "Kuro Test")
+	git("config", "user.email", "test@example.invalid")
+	git("commit", "--allow-empty", "-m", "first")
+	first := git("rev-parse", "HEAD")
+	pub, priv, _ := ed25519.GenerateKey(nil)
+	data := signedAttestation(t, priv, first, "PASS", false)
+	git("notes", "--ref="+GitNotesRef, "add", "-m", string(data), first)
+	code, err := verifyAttestationCommand([]string{"--repo", dir, "--pubkey", hex.EncodeToString(pub)})
+	if err != nil || code != 0 {
+		t.Fatalf("valid note rejected: %v", err)
+	}
+	git("commit", "--allow-empty", "-m", "second")
+	git("notes", "--ref="+GitNotesRef, "add", "-m", string(data), "HEAD")
+	if _, err := verifyAttestationCommand([]string{"--repo", dir, "--pubkey", hex.EncodeToString(pub)}); err == nil {
+		t.Fatal("attestation copied to another commit accepted")
+	}
 }

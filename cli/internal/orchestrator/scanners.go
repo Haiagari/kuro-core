@@ -3,8 +3,8 @@ package orchestrator
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os/exec"
+	"time"
 )
 
 // ── Scanners ───────────────────────────────────────────────
@@ -15,14 +15,14 @@ func (a *LocalAdapter) runGitleaks(ctx context.Context, path string) ([]Finding,
 		[]string{"dir", "--report-format=json", "--report-path=/proc/self/fd/1", "/src"},
 		map[string]string{path: "/src:ro,Z"},
 	)
+	findings, parseErr := parseGitleaksOutput(output)
 	if err != nil {
-		// Gitleaks exits 1 when findings exist — that's normal
-		if len(output) == 0 {
-			return nil, fmt.Errorf("no output: %w", err)
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 || ctx.Err() != nil || parseErr != nil || len(findings) == 0 {
+			return nil, err
 		}
 	}
-
-	return parseGitleaksOutput(output)
+	return findings, parseErr
 }
 
 // runGitleaksHistory scans the full git history using gitleaks detect (no --no-git).
@@ -33,70 +33,53 @@ func (a *LocalAdapter) runGitleaksHistory(ctx context.Context, path string) ([]F
 		[]string{"detect", "--source=/src", "--report-format=json", "--report-path=/proc/self/fd/1"},
 		map[string]string{path: "/src:ro,Z"},
 	)
+	findings, parseErr := parseGitleaksOutput(output)
 	if err != nil {
-		if len(output) == 0 {
-			return nil, fmt.Errorf("no output: %w", err)
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 || ctx.Err() != nil || parseErr != nil || len(findings) == 0 {
+			return nil, err
 		}
 	}
-
-	return parseGitleaksOutput(output)
+	return findings, parseErr
 }
 
-// runTrufflehogHistory scans the full git history using trufflehog filesystem scanner.
-// TruffleHog walks files recursively, detecting secrets in all files including .git objects.
+// runTrufflehogHistory uses TruffleHog's git source, with network verification disabled.
 func (a *LocalAdapter) runTrufflehogHistory(ctx context.Context, path string) ([]Finding, error) {
-	// TruffleHog needs write access for its temp cache, use :Z (not :ro,Z)
-	output, err := a.runContainer(ctx,
-		trufflehogImage,
-		[]string{"filesystem", "/src", "--json", "--no-update", "--concurrency", "1"},
-		map[string]string{path: "/src:Z"},
-	)
+	output, err := a.runContainer(ctx, trufflehogImage,
+		[]string{"git", "file:///src", "--json", "--no-update", "--no-verification", "--concurrency", "1"},
+		map[string]string{path: "/src:ro,Z"})
 	if err != nil {
-		if len(output) == 0 {
-			return nil, fmt.Errorf("no output: %w", err)
-		}
+		return nil, err
 	}
-
 	return parseTrufflehogOutput(output)
 }
 
 func (a *LocalAdapter) runTrivy(ctx context.Context, path string) ([]Finding, error) {
-	output, err := a.runContainer(ctx,
-		trivyImage,
-		[]string{"trivy", "fs", "--format=json", "--skip-db-update", "--offline-scan", "/src"},
-		map[string]string{path: "/src:ro,Z"},
-	)
-	if err != nil && len(output) == 0 {
-		// DB not cached locally — retry without --offline-scan to allow download
-		output, err = a.runContainer(ctx,
-			trivyImage,
-			[]string{"trivy", "fs", "--format=json", "--skip-db-update", "/src"},
-			map[string]string{path: "/src:ro,Z"},
-		)
-		if err != nil && len(output) == 0 {
-			// Trivy is non-critical; return empty findings
-			return nil, nil
-		}
+	cacheDir, err := trivyCacheDir()
+	if err != nil {
+		return nil, err
 	}
-
+	if err := validateTrivyDB(cacheDir, time.Now()); err != nil {
+		return nil, err
+	}
+	output, err := a.runContainer(ctx, trivyImage,
+		[]string{"fs", "--scanners=vuln", "--format=json", "--exit-code=0", "--cache-dir=/trivy-cache",
+			"--skip-db-update", "--skip-java-db-update", "--offline-scan", "/src"},
+		map[string]string{path: "/src:ro,Z", cacheDir: "/trivy-cache:Z"})
+	if err != nil {
+		return nil, err
+	}
 	return parseTrivyOutput(output)
 }
 
 func (a *LocalAdapter) runCheckov(ctx context.Context, path string) ([]Finding, error) {
 	output, err := a.runContainer(ctx,
 		checkovImage,
-		[]string{"checkov", "--directory=/src", "--output=json", "--soft-fail"},
+		[]string{"--directory=/src", "--output=json", "--soft-fail", "--skip-download", "--framework", "terraform", "dockerfile"},
 		map[string]string{path: "/src:ro,Z"},
 	)
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 2 {
-			// Exit code 2 = no IaC files found; not an error
-			return nil, nil
-		}
-		if len(output) == 0 {
-			return nil, fmt.Errorf("checkov produced no output: %w", err)
-		}
+		return nil, err
 	}
 
 	return parseCheckovOutput(output)
