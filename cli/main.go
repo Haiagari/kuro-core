@@ -8,9 +8,10 @@ import (
 	"kuro/cli/cmd"
 )
 
-var Version = "v0.1.1"
+var Version = "dev"
 
 func main() {
+	cmd.Version = strings.TrimPrefix(Version, "v")
 	if len(os.Args) < 2 {
 		printUsage()
 		os.Exit(1)

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -101,5 +103,29 @@ func TestParseScanJSON_UnknownWithoutFindingsErrors(t *testing.T) {
 	}
 	if blocked {
 		t.Fatal("should not be blocked when returning error")
+	}
+}
+
+func TestParseScanJSONFailedStatusCannotPass(t *testing.T) {
+	for _, data := range []string{`{"decision":"pass","status":"failed"}`, `{"decision":"pass","error":"scanner failed"}`} {
+		if _, _, err := parseScanJSON([]byte(data)); err == nil {
+			t.Fatal("failed scanner was approved")
+		}
+	}
+}
+
+func TestLocalCLIRejectsProcessErrorWithPassJSON(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "kuro")
+	os.WriteFile(bin, []byte("#!/bin/sh\nprintf '{\"decision\":\"pass\",\"status\":\"completed\"}'\nexit 1\n"), 0755)
+	client := &localCLIClient{kuroBin: bin}
+	if _, _, err := client.Scan(t.TempDir(), "repo", "commit", "main"); err == nil {
+		t.Fatal("nonzero process accepted as approval")
+	}
+}
+func TestLocalClientDoesNotCacheApprovals(t *testing.T) {
+	t.Setenv("SCAN_MODE", "local")
+	t.Setenv("KURO_BIN", "sh")
+	if _, ok := selectScanClient().(*localCLIClient); !ok {
+		t.Fatal("local gate still caches approvals")
 	}
 }

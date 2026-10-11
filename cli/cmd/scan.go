@@ -1,8 +1,8 @@
 package cmd
 
-
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -36,7 +36,7 @@ func RunScan(args []string) {
 	remoteFlag := fs.Bool("remote", false, "Force remote mode (send to server)")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format")
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
-	noCacheFlag := fs.Bool("no-cache", false, "Disable file change cache")
+	noCacheFlag := fs.Bool("no-cache", false, "Disable file statistics cache (scanners always run)")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
 	// Go's flag package stops at the first non-flag; docs/examples use `scan PATH --json`.
@@ -164,7 +164,6 @@ func RunScan(args []string) {
 		os.Exit(code)
 	}
 }
-
 
 // reorderFlagsBeforeArgs moves leading-dash tokens before positionals so
 // `kuro scan ./path --json` works the same as `kuro scan --json ./path`.
@@ -335,38 +334,32 @@ func padSeverity(s string) string {
 }
 
 func printJSON(result *orchestrator.ScanResult, scanErr error) {
-	if result == nil {
-		fmt.Printf("{\n")
-		fmt.Printf("  \"status\": \"failed\",\n")
-		fmt.Printf("  \"decision\": \"\",\n")
-		if scanErr != nil {
-			fmt.Printf("  \"error\": %q,\n", scanErr.Error())
-		}
-		fmt.Printf("  \"findings\": []\n")
-		fmt.Printf("}\n")
-		return
+	type finding struct {
+		Scanner  string `json:"scanner"`
+		Severity string `json:"severity"`
+		Title    string `json:"title"`
+		File     string `json:"file"`
+		Line     int    `json:"line"`
 	}
-
-	fmt.Printf("{\n")
-	fmt.Printf("  \"target\": %q,\n", result.Target)
-	fmt.Printf("  \"mode\": %q,\n", result.Mode)
-	fmt.Printf("  \"status\": %q,\n", result.Status)
-	fmt.Printf("  \"decision\": %q,\n", result.Decision)
-	fmt.Printf("  \"duration\": %q,\n", result.Duration.Round(time.Millisecond))
+	output := map[string]any{"status": "failed", "decision": "", "findings": []finding{}}
+	if result != nil {
+		output["target"], output["mode"] = result.Target, result.Mode
+		output["status"], output["decision"] = result.Status, result.Decision
+		output["duration"] = result.Duration.Round(time.Millisecond).String()
+		findings := make([]finding, 0, len(result.Findings))
+		for _, f := range result.Findings {
+			findings = append(findings, finding{f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber})
+		}
+		output["findings"] = findings
+	}
 	if scanErr != nil {
-		fmt.Printf("  \"error\": %q,\n", scanErr.Error())
+		output["error"] = scanErr.Error()
 	}
-	fmt.Printf("  \"findings\": [\n")
-	for i, f := range result.Findings {
-		comma := ""
-		if i < len(result.Findings)-1 {
-			comma = ","
-		}
-		fmt.Printf("    {\"scanner\":%q,\"severity\":%q,\"title\":%q,\"file\":%q,\"line\":%d}%s\n",
-			f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber, comma)
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(output); err != nil {
+		fmt.Fprintf(os.Stderr, "encode scan report: %v\n", err)
 	}
-	fmt.Printf("  ]\n")
-	fmt.Printf("}\n")
 }
 
 // ScanPhaseResult represents a single phase output for the terminal.

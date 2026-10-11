@@ -16,7 +16,8 @@ import (
 	"time"
 )
 
-const Version = "0.1.1"
+var Version = "dev"
+
 const updateURL = "https://api.github.com/repos/Haiagari/kuro-core/releases/latest"
 const installOneLiner = "curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh"
 
@@ -89,8 +90,8 @@ func doUpdate() {
 	}
 
 	// GoReleaser archive: kuro_{{ .Version }}_{{ .Os }}_{{ .Arch }}.tar.gz
-	// .Version matches the git tag (e.g. v0.1.1).
-	assetName := fmt.Sprintf("kuro_%s_%s_%s.tar.gz", release.TagName, goos, arch)
+	// GoReleaser .Version omits the leading v in the git tag.
+	assetName := fmt.Sprintf("kuro_%s_%s_%s.tar.gz", strings.TrimPrefix(release.TagName, "v"), goos, arch)
 
 	var downloadURL string
 	for _, asset := range release.Assets {

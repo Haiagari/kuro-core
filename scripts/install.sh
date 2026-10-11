@@ -33,7 +33,7 @@ NC='\033[0m' # No Color
 info() { printf "${GREEN}%s${NC}\n" "$*"; }
 warn() { printf "${YELLOW}%s${NC}\n" "$*"; }
 error() {
-  printf "${RED}%s${NC}\n" "$*"
+  printf "${RED}%s${NC}\n" "$*" >&2
   exit 1
 }
 
@@ -68,7 +68,7 @@ resolve_version() {
   # Fetch latest release from GitHub API
   url="https://api.github.com/repos/${REPO}/releases/latest"
   if command -v curl >/dev/null 2>&1; then
-    tag=$(curl -sL "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//' | sed 's/".*//')
+    tag=$(curl -fsSL "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//' | sed 's/".*//')
   elif command -v wget >/dev/null 2>&1; then
     tag=$(wget -qO- "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//' | sed 's/".*//')
   else
@@ -77,7 +77,7 @@ resolve_version() {
 
   if [ -z "$tag" ] || [ "$tag" = "null" ]; then
     error "Could not determine latest release from GitHub API.
-  Try specifying a version: curl ... | sh -s -- v0.1.1"
+  Build from source with make build; release binaries may not be published yet."
   fi
 
   echo "$tag"
@@ -102,9 +102,11 @@ main() {
   os=$(detect_os)
   arch=$(detect_arch)
   tag=$(resolve_version)
+  printf '%s\n' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$' || error "Invalid release version: $tag"
 
-  archive="kuro_${tag}_${os}_${arch}.tar.gz"
-  checksum_file="kuro_${tag}_checksums.txt"
+  version=${tag#v}
+  archive="kuro_${version}_${os}_${arch}.tar.gz"
+  checksum_file="kuro_${version}_checksums.txt"
   download_url="https://github.com/${REPO}/releases/download/${tag}"
 
   info "Kuro ${tag} — ${os}/${arch}"
@@ -116,7 +118,7 @@ main() {
 
   # ── Download archive ─────────────────────────────────────
   printf "  Downloading %s ... " "$archive"
-  download "${download_url}/${archive}" "${tmpdir}/${archive}"
+  download "${download_url}/${archive}" "${tmpdir}/${archive}" || error "Release archive unavailable; build from source with make build."
   info "done"
 
   # ── Download checksums ───────────────────────────────────

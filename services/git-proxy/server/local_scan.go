@@ -40,7 +40,17 @@ func (c *localCLIClient) Scan(dir, repo, commit, branch string) (bool, []proxySc
 		return false, nil, fmt.Errorf("kuro scan produced no JSON output: %s", msg)
 	}
 
-	return parseScanJSON(out)
+	blocked, findings, parseErr := parseScanJSON(out)
+	if parseErr != nil {
+		return false, nil, parseErr
+	}
+	if err != nil {
+		exitErr, ok := err.(*exec.ExitError)
+		if !ok || (exitErr.ExitCode() != 1 && exitErr.ExitCode() != 2) || !blocked {
+			return false, nil, fmt.Errorf("kuro scan process failed despite JSON: %w", err)
+		}
+	}
+	return blocked, findings, nil
 }
 
 // parseScanJSON maps kuro scan --json output to a proxy block decision.
@@ -74,6 +84,9 @@ func parseScanJSON(out []byte) (blocked bool, findings []proxyScanFinding, err e
 		})
 	}
 
+	if result.Error != "" || result.Status == "failed" {
+		return false, nil, fmt.Errorf("kuro scan failed: %s", result.Error)
+	}
 	decision := strings.ToLower(strings.TrimSpace(result.Decision))
 	switch decision {
 	case "pass", "approved", "ok":
@@ -105,6 +118,7 @@ func selectScanClient() KuroAPIClient {
 				bin = "bin/kuro"
 			}
 		}
-		return newCachedKuroClient(&localCLIClient{kuroBin: bin})
+		// Local approval depends on current policy, scanner rules and vulnerability DB.
+		return &localCLIClient{kuroBin: bin}
 	}
 }

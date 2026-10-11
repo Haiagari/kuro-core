@@ -93,7 +93,7 @@
       <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
       <text x="12" y="22" class="code-font">kuro fix [path]</text>
       <text x="12" y="40" class="card-sub">Interactive remediation</text>
-      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">Bubbletea TUI · env var extraction</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">Interactive text · env extraction</text>
     </g>
 
     <!-- Card 4: canary -->
@@ -108,8 +108,8 @@
     <g transform="translate(912, 42)">
       <rect width="205" height="74" rx="8" fill="url(#card-grad)" stroke="#334155" stroke-width="1"/>
       <text x="12" y="22" class="code-font">kuro attest</text>
-      <text x="12" y="40" class="card-sub">Supply-chain proof</text>
-      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">in-toto · SLSA · Ed25519 verify</text>
+      <text x="12" y="40" class="card-sub">Signature + commit check</text>
+      <text x="12" y="56" font-size="9.5" font-weight="500" fill="#64748b">DSSE · Ed25519 · Commit binding</text>
     </g>
 
     <!-- Card 6: proxy -->
@@ -159,7 +159,7 @@
       <text x="12" y="44" class="card-header">SCOPE</text>
       <text x="12" y="66" class="card-sub">• Lockfile &amp; IaC detection</text>
       <text x="12" y="84" class="card-sub">• Working tree vs --history</text>
-      <text x="12" y="102" class="card-sub">• Differential cache lookup</text>
+      <text x="12" y="102" class="card-sub">• File statistics lookup</text>
       <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">cache.go · scanners.go</text>
     </g>
 
@@ -186,8 +186,8 @@
       <text x="12" y="24" class="tag" fill="#00f2fe">PHASE 04</text>
       <text x="12" y="44" class="card-header">ANALYZE</text>
       <text x="12" y="66" class="card-sub">• Multi-tool JSON parsing</text>
-      <text x="12" y="84" class="card-sub">• SHA-256 fingerprinting</text>
-      <text x="12" y="102" class="card-sub">• Jaccard dedup collation</text>
+      <text x="12" y="84" class="card-sub">• Severity aggregation</text>
+      <text x="12" y="102" class="card-sub">• No finding deduplication</text>
       <text x="12" y="120" font-size="9.5" font-weight="600" fill="#38bdf8">parsers.go</text>
     </g>
 
@@ -223,9 +223,9 @@
     <!-- Module A: Differential Cache -->
     <g transform="translate(24, 202)">
       <rect width="425" height="85" rx="8" fill="#050811" stroke="#1e293b" stroke-width="1"/>
-      <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">Differential File Cache</text>
+      <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">File Statistics Cache</text>
       <text x="210" y="24" class="code-font">$HOME/.kuro/cache</text>
-      <text x="14" y="46" class="card-sub">Hashes source files. Skips execution if untouched. Committed strictly on PASS.</text>
+      <text x="14" y="46" class="card-sub">Content hashes for statistics only. Scanners always execute.</text>
       <text x="14" y="66" font-size="10" font-weight="600" fill="#64748b">CLI bypass: --no-cache · Env: KURO_NO_CACHE=1</text>
     </g>
 
@@ -243,7 +243,7 @@
       <rect width="425" height="85" rx="8" fill="#050811" stroke="#1e293b" stroke-width="1"/>
       <text x="14" y="24" font-size="12" font-weight="700" fill="#ffffff">Embedded Policy Engine</text>
       <text x="220" y="24" class="code-font">default-policy.json</text>
-      <text x="14" y="46" class="card-sub">Dynamic rule thresholds; zero tolerance on leaked secrets. Overridable via KURO_POLICY_PATH.</text>
+      <text x="14" y="46" class="card-sub">Scanner/severity/path filters; custom JSON..</text>
       <text x="14" y="66" font-size="10" font-weight="600" fill="#64748b">Fail-closed gate logic · Strict security baseline</text>
     </g>
   </g>
@@ -325,14 +325,14 @@
       <rect width="1312" height="90" rx="8" fill="#04060b" stroke="#1e293b" stroke-width="1.2"/>
       <g transform="translate(16, 16)">
         <circle cx="6" cy="6" r="4" fill="#f43f5e"/>
-        <text x="18" y="10" font-size="12" font-weight="800" fill="#ffffff">CONTAINER HARDENING &amp; FAIL-CLOSED GUARANTEE</text>
+        <text x="18" y="10" font-size="12" font-weight="800" fill="#ffffff">CONTAINER CONTROLS &amp; FAIL-CLOSED DEFAULT</text>
         <text x="450" y="10" font-size="10.5" font-weight="500" fill="#94a3b8">Applied across all container executions in container.go</text>
 
         <!-- 5 Feature Badges -->
         <g transform="translate(0, 26)">
           <rect width="230" height="28" rx="4" fill="#091322" stroke="#1e293b" stroke-width="1"/>
           <text x="10" y="18" font-size="10" font-weight="700" fill="#00f2fe">--network=none</text>
-          <text x="120" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">Zero data exfiltration</text>
+          <text x="120" y="18" font-size="9.5" font-weight="500" fill="#94a3b8">No scanner network</text>
         </g>
 
         <g transform="translate(245, 26)">

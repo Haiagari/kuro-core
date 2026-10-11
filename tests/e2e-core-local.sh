@@ -120,7 +120,7 @@ while True:
     try:
         obj, _ = dec.raw_decode(text[j:])
         if isinstance(obj, dict) and 'decision' in obj:
-            decision=obj.get('decision','')
+            decision=obj.get('decision','') if obj.get('status') == 'completed' else ''
             break
     except json.JSONDecodeError:
         pass
@@ -165,7 +165,7 @@ while True:
     try:
         obj, _ = dec.raw_decode(text[j:])
         if isinstance(obj, dict) and 'decision' in obj:
-            decision=obj.get('decision','')
+            decision=obj.get('decision','') if obj.get('status') == 'completed' else ''
             break
     except json.JSONDecodeError:
         pass

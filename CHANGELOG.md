@@ -9,10 +9,24 @@ Repository: [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core)
 
 ## [Unreleased]
 
+### Fixed
+- Preserve scanner process errors even with stdout; accept Gitleaks finding exit 1 only with valid nonempty findings. Reject Semgrep analysis errors, malformed TruffleHog NDJSON and invalid Checkov report shapes.
+- Require a prepared, fresh Trivy database for offline vulnerability scans; remove silent fallback. Add explicit online `scripts/update-trivy-db.sh` without source mounts.
+- Validate custom policies before scanning, combine scanner/severity/path filters, enforce safety floors, and remove inactive Grype/Syft rules.
+- File hashes are always recomputed; file statistics and local proxy approval caches no longer skip current security checks.
+- Attestation verify now requires a trusted key, validates DSSE PAE signatures and expected commit binding, handles absent/multiple signatures safely, and requires explicit `--legacy-raw` for historical envelopes.
+- Align release filenames with GoReleaser's version without leading `v`; clarify unavailable-release/source-build guidance and test checksum rejection.
+- Replace obsolete documented helper paths with Core commands; deploy installer delegates to the Core installer.
+
+### Changed
+- Source builds report `dev`; current docs identify unreleased behavior and published-release availability separately.
+- Remove unsupported Jaccard/deduplication claims; document scan coverage, offline DB prerequisites, remediation/canary limits and proxy bypassability.
+- Add policy contract and regression tests for trust boundaries. Historical entries below describe prior claims/behavior, not current guarantees.
+
 ### Added
 - **Fail-Closed on Scanner Errors**: Enforce fail-closed security architecture when local scanner containers fail, time out, or produce unparsable output; joined errors strictly transition scan decision to `block` and exit code `1`.
 - **Scanner Concurrency Throttling**: Bounded worker pool semaphore limiting concurrent scanner containers (default: 2, tunable via `KURO_MAX_CONCURRENCY`) to prevent workstation CPU and memory starvation.
-- **Differential File Cache Lifecycle**: Transactional caching committed only on clean scans (`decision: pass`). If all files in scope are cached and clean, scan short-circuits instantly. Added `--no-cache` CLI flag and `KURO_NO_CACHE` environment variable.
+- **File Statistics Cache**: Hashes recorded after policy-permitted scans. `--no-cache` and `KURO_NO_CACHE` disable statistics; current security decisions never reuse cached approvals.
 - **Policy Engine Integration**: Gate policy evaluated dynamically via embedded `rules/default-policy.json` (overridable via `KURO_POLICY_PATH`), evaluating severity thresholds and scanner-specific rules instead of hardcoded logic.
 - **Clean Enterprise Command Guidance**: `kuro up`, `kuro deploy`, and enterprise `kuro setup` subcommands provide clear guidance and documentation links to `Haiagari/kuro-enterprise` rather than failing on missing docker-compose stacks.
 

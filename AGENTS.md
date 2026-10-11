@@ -14,10 +14,10 @@ Related: [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/ARCHITECTURE.md](docs/ARCHI
 | Product | **Kuro Core** — single-binary local AppSec gate |
 | Repo | Always `Haiagari/kuro-core` (never `Haiagari/kuro`, `sambleed/*`, or `kuro-pipeline` unless historical notes) |
 | Edition | Core = local Docker/Podman scanners; Enterprise = `Haiagari/kuro-enterprise` |
-| Version docs target | **v0.1.1** |
+| Version docs target | Current development source; distinguish historical v0.1.1 |
 | License | AGPL-3.0-only |
-| Happy path | `kuro doctor` → `kuro scan` → `kuro fix` / `kuro canary` → `kuro proxy` |
-| Install | `curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh \| sh` (pin: `sh -s -- v0.1.1`); also `make build` / `make install` |
+| Happy path | Build → doctor → prepare Trivy DB when selected → scan; other commands optional |
+| Install | `make build` / `make install`; release script only when assets are published |
 | Scan exit codes | pass=`0`, review=`2`, block/error=`1`; flags after path OK (`kuro scan PATH --json`) |
 | Scanners | Gitleaks, Semgrep (**embedded** rules, not `--config=auto`), Trivy, Checkov |
 | Hardening | `--network=none`, `--cap-drop=ALL`, `no-new-privileges`, `--memory=512m` |
@@ -54,7 +54,7 @@ kuro-core/
 
 | Domain | Choice |
 |---|---|
-| Language | Go 1.26+ |
+| Language | Go 1.26.4+ |
 | CLI / TUI | Bubbletea + Lipgloss |
 | Scanners | Gitleaks, Semgrep, Trivy, Checkov (+ TruffleHog in `--history`) |
 | Proxy | Go Smart-HTTP (`git-receive-pack`) |

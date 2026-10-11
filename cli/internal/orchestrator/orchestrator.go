@@ -1,6 +1,5 @@
 package orchestrator
 
-
 import (
 	"context"
 	"fmt"
@@ -47,7 +46,7 @@ type RunResult struct {
 // ScanResult is the complete result of an orchestrated scan.
 type ScanResult struct {
 	Target             string          `json:"target"`
-	Mode             string          `json:"mode"` // "local" or "remote"
+	Mode               string          `json:"mode"` // "local" or "remote"
 	Status             string          `json:"status"`
 	Decision           string          `json:"decision"`
 	Findings           []Finding       `json:"findings"`
@@ -64,12 +63,12 @@ type ScanResult struct {
 type Phase string
 
 const (
-	PhaseFetch    Phase = "fetch"
-	PhaseScope    Phase = "scope"
-	PhaseScan     Phase = "scan"
-	PhaseAnalyze  Phase = "analyze"
-	PhaseDecide   Phase = "decide"
-	PhaseReport   Phase = "report"
+	PhaseFetch   Phase = "fetch"
+	PhaseScope   Phase = "scope"
+	PhaseScan    Phase = "scan"
+	PhaseAnalyze Phase = "analyze"
+	PhaseDecide  Phase = "decide"
+	PhaseReport  Phase = "report"
 )
 
 // PhaseResult is the result of an individual phase.
@@ -113,34 +112,38 @@ type Orchestrator struct {
 	adapter   Adapter
 	verbose   bool
 	policy    *Policy
+	policyErr error
 	eventsCh  chan<- PhaseEvent // nil in text/JSON mode, non-nil for TUI
 }
 
 // New creates an orchestrator with the given adapter and default policy.
 func New(adapter Adapter, verbose bool) *Orchestrator {
-	pol, _ := LoadPolicy("")
+	pol, policyErr := LoadPolicy("")
 	return &Orchestrator{
-		adapter:  adapter,
-		verbose:  verbose,
-		policy:   pol,
-		eventsCh: nil,
+		adapter:   adapter,
+		verbose:   verbose,
+		policy:    pol,
+		policyErr: policyErr,
+		eventsCh:  nil,
 	}
 }
 
 // NewWithEvents creates an orchestrator that sends phase events to eventsCh.
 func NewWithEvents(adapter Adapter, verbose bool, eventsCh chan<- PhaseEvent) *Orchestrator {
-	pol, _ := LoadPolicy("")
+	pol, policyErr := LoadPolicy("")
 	return &Orchestrator{
-		adapter:  adapter,
-		verbose:  verbose,
-		policy:   pol,
-		eventsCh: eventsCh,
+		adapter:   adapter,
+		verbose:   verbose,
+		policy:    pol,
+		policyErr: policyErr,
+		eventsCh:  eventsCh,
 	}
 }
 
 // SetPolicy sets a custom security policy for the orchestrator.
 func (o *Orchestrator) SetPolicy(p *Policy) {
 	o.policy = p
+	o.policyErr = p.Validate()
 }
 
 // Run executes the complete scan pipeline.
@@ -150,6 +153,11 @@ func (o *Orchestrator) Run(ctx context.Context, target string) (*ScanResult, err
 		Mode:      o.adapter.Name(),
 		StartedAt: time.Now(),
 		Status:    "running",
+	}
+
+	if o.policyErr != nil {
+		result.Status, result.Decision = "failed", "block"
+		return result, fmt.Errorf("policy load failed: %w", o.policyErr)
 	}
 
 	// ── PHASE 1: FETCH ───────────────────────────────────────
@@ -238,26 +246,7 @@ func (o *Orchestrator) analyze(findings []Finding) string {
 		return o.policy.Evaluate(findings)
 	}
 
-	hasCritical := false
-	hasHigh := false
-
-	for _, f := range findings {
-		switch f.Severity {
-		case "CRITICAL":
-			hasCritical = true
-		case "HIGH":
-			hasHigh = true
-		}
-	}
-
-	switch {
-	case hasCritical:
-		return "block"
-	case hasHigh:
-		return "review"
-	default:
-		return "pass"
-	}
+	return "block" // A missing policy is an error, never a permissive fallback.
 }
 
 // reportPhase displays the progress of a phase.

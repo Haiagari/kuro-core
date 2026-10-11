@@ -1,94 +1,28 @@
-# Helper Scripts — Kuro Core
+# Helper scripts — Kuro Core
 
-**Audience:** developers and CI maintainers working in [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core).  
-**Scope:** local Core helpers. These scripts do **not** start Postgres/NATS/MinIO.
+Run from a source checkout. Build with `make build`; local helpers use `bin/kuro` or KURO_BIN.
 
-Related: [../QUICKSTART.md](../QUICKSTART.md) · [../tests/README.md](../tests/README.md) · [../README.md](../README.md)
-
----
-
-## Inventory
-
-| Script | Purpose |
+| Script | Current purpose |
 |---|---|
-| `install.sh` | One-command installer for the Kuro Core CLI (release binaries) |
-| `pre-commit-secrets.sh` | Git pre-commit hook running a local Gitleaks-oriented check |
-| `setup-hooks.sh` | Installs local git hooks into `.git/hooks/` |
-| `run-local-scan.sh` | Convenience wrapper for local scans |
-| `run-tests.sh` | Local test harness runner |
-| `run-validation.sh` / `prepare-validation.sh` | Validation / sanity helpers |
-| `scan-container-image.sh` | Container image vulnerability helper |
-| `check-docker-gid.sh` | Diagnostics for Docker socket group permissions |
-
----
-
-## Installer (primary user entry)
+| install.sh | Download published release archive and verify SHA-256; use source build if assets do not exist |
+| update-trivy-db.sh | Explicit online DB preparation, without mounting source |
+| market-validation-demo.sh | Synthetic clean/block demonstration |
+| run-local-scan.sh | Forward arguments to the Core CLI scan |
+| run-tests.sh | Go tests for CLI and proxy modules |
+| prepare-validation.sh | Core doctor checks |
+| run-validation.sh | Run the synthetic market-validation demo |
+| setup-hooks.sh / pre-commit-secrets.sh | Optional Gitleaks hook; requires separately installed host Gitleaks |
+| scan-container-image.sh | Legacy auxiliary image scanner; outside the hardened Core gate |
+| check-docker-gid.sh | Docker socket permission diagnostics |
 
 ```bash
-# Latest from main branch script (downloads release asset)
-curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
-
-# Pin Core v0.1.1
-curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
-```
-
-Always use the **Haiagari/kuro-core** raw URL — not historical `Haiagari/kuro` or personal forks.
-
-After install:
-
-```bash
-kuro version
-kuro doctor
-```
-
----
-
-## Hooks
-
-```bash
-./scripts/setup-hooks.sh
-# installs scripts/pre-commit-secrets.sh into .git/hooks/pre-commit (typical)
-```
-
-**Pitfall:** Hooks complement but do not replace `kuro scan` / `kuro proxy`. Prefer the full Core happy path for gate coverage.
-
----
-
-## Local scan / tests
-
-```bash
-./scripts/run-local-scan.sh
+./scripts/run-local-scan.sh ./project --json
 ./scripts/run-tests.sh
-# Prefer Make when possible:
-make test
-make e2e-core
+./scripts/prepare-validation.sh
+./scripts/run-validation.sh
+./scripts/update-trivy-db.sh
 ```
 
----
+The optional pre-commit hook is bypassable and currently skips when host Gitleaks is unavailable; it is not evidence of full Core enforcement. Check script prerequisites before use. No Core helper requires Postgres/NATS/MinIO. The alternate `deploy/install.sh` delegates to the same Core installer.
 
-## Docker socket diagnostics
-
-If `kuro doctor` or scans fail with permission errors on `/var/run/docker.sock`:
-
-```bash
-./scripts/check-docker-gid.sh
-```
-
-Ensure your user can talk to the Docker/Podman daemon, then re-run `kuro doctor`.
-
----
-
-## Troubleshooting
-
-| Issue | Fix |
-|---|---|
-| Installer 404 / wrong binary | Confirm URL is `Haiagari/kuro-core`; pin `v0.1.1` |
-| Hook fires but push still leaks | Use `kuro proxy` with `SCAN_MODE=local` |
-| Validation scripts expect server stack | Use Core paths (`make e2e-core`); Enterprise uses different repos/scripts |
-
----
-
-## See also
-
-- [../CONTRIBUTING.md](../CONTRIBUTING.md)
-- [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+Release asset names omit the tag's leading `v`: tag `vX.Y.Z` uses `kuro_X.Y.Z_linux_amd64.tar.gz` and `kuro_X.Y.Z_checksums.txt`. Validate a real release before recommending it. The installer supports Linux/macOS amd64/arm64. See [Quickstart](../QUICKSTART.md), [scanners](../docs/SCANNER-ARCHITECTURE.md), [tests](../tests/README.md).

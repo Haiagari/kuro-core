@@ -11,7 +11,8 @@ rules:
       confidence: MEDIUM
       kuro: core-offline
     patterns:
-      - pattern-regex: (?i)(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)\s*[=:]\s*['\"][^'\"]{8,}['\"]
+      - pattern-regex: |-
+          (?i)(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)\s*[=:]\s*['\"][^'\"]{8,}['\"]
 
   - id: kuro.python.dangerous-eval
     message: Use of eval() can lead to code injection
@@ -60,4 +61,5 @@ rules:
       confidence: LOW
       kuro: core-offline
     patterns:
-      - pattern-regex: ['\"]http://(?!localhost|127\.0\.0\.1)[^'\"]+['\"]
+      - pattern-regex: |-
+          ['\"]http://(?!localhost|127\.0\.0\.1)[^'\"]+['\"]

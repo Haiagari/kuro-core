@@ -11,7 +11,7 @@ Related: [AGENTS.md](AGENTS.md) · [QUICKSTART.md](QUICKSTART.md) · [CODE_OF_CO
 
 | Tool | Version | Why |
 |---|---|---|
-| Go | 1.26+ | Build CLI + git-proxy modules |
+| Go | 1.26.4+ | Build CLI + git-proxy modules |
 | Docker 24+ or Podman 4+ | Scanner containers + Core E2E |
 | Make | — | `build`, `test`, `proxy`, `e2e-core` |
 | Git | — | Notes / proxy workflows |
@@ -24,7 +24,7 @@ Related: [AGENTS.md](AGENTS.md) · [QUICKSTART.md](QUICKSTART.md) · [CODE_OF_CO
 git clone https://github.com/Haiagari/kuro-core.git
 cd kuro-core
 make build
-./bin/kuro version          # expect v0.1.1 (or your branch ldflags)
+./bin/kuro version          # expect dev (or your release ldflags)
 ./bin/kuro doctor
 ```
 
@@ -89,6 +89,7 @@ kuro-core/
 |---|---|
 | Unit | `make test` |
 | Vet | `make lint` |
+| Installer/DB helper fixtures | `python3 tests/test-install.py`; `python3 tests/test-trivy-db-update.py` |
 | Core E2E (when scanners available) | `make e2e-core` |
 
 `tests/e2e-proxy.sh` is for Enterprise/API stacks — not required for pure Core CLI changes unless you touch API scan mode.
@@ -111,7 +112,7 @@ kuro-core/
 When editing markdown:
 
 - Use repo URL `Haiagari/kuro-core` only.
-- Align version references to **v0.1.1** unless documenting history.
+- Align version references to the current development source; label published-version and historical behavior explicitly.
 - Cross-link ARCHITECTURE / SCANNER / API / ATTESTATION as appropriate.
 - Include troubleshooting and Core vs Enterprise scope on major pages.
 

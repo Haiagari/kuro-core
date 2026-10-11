@@ -20,10 +20,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Go 1.26
+      - name: Set up Go 1.26.4
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26"
+          go-version: "1.26.4"
 
       - name: Verify Go Workspace & Modules
         run: |
@@ -36,5 +36,39 @@ jobs:
       - name: Unit & Integration Tests
         run: make test
 
+      - name: Shell Helper Fixture Tests
+        run: |
+          python3 tests/test-install.py
+          python3 tests/test-trivy-db-update.py
+
       - name: Build Standalone Binary
         run: make build
+
+  scanner-contracts:
+    name: Native Scanner Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.4"
+      - name: Build
+        run: make build
+      - name: Pull scanner images
+        run: |
+          docker pull docker.io/zricethezav/gitleaks:v8.30.1
+          docker pull docker.io/semgrep/semgrep:1.165.0
+          docker pull docker.io/aquasec/trivy:0.57.0
+          docker pull docker.io/bridgecrew/checkov:3.2.400
+          docker pull docker.io/trufflesecurity/trufflehog:3.81.0
+      - name: Prepare vulnerability DB without source mounts
+        run: ./scripts/update-trivy-db.sh
+      - name: Core clean and secret E2E
+        run: make e2e-core
+      - name: SAST, SCA, IaC and Git history contracts
+        run: ./tests/e2e-scanner-contracts.sh

@@ -1,211 +1,77 @@
-# Quickstart — Kuro Core v0.1.1
+# Quickstart — Kuro Core (development branch)
 
-**Audience:** developers setting up Kuro Core on a workstation for the first time.  
-**Scope:** local-first Core only (Docker/Podman scanners, no Postgres/NATS/MinIO). For multi-tenant dashboards and central APIs, use [Haiagari/kuro-enterprise](https://github.com/Haiagari/kuro-enterprise).
+This guide describes the current source tree, including changes not released as v0.1.1. Core runs locally; Docker or Podman is required. Enterprise servers are optional and separate.
 
-This tutorial walks the full happy path:
+## Build and check
 
-`install` → `doctor` → `scan` (clean + secret) → `fix` → `canary` → `proxy` → optional `e2e-core`
+Supported release platforms: Linux/macOS, amd64/arm64. Windows binaries are not configured; WSL support has not been verified here. Building requires Go **1.26.4 or newer**, Git and Make. Scanners require Docker 24+ or Podman 4+ with a usable runtime.
 
----
-
-## Prerequisites
-
-| Requirement | Notes |
-|---|---|
-| Docker 24+ **or** Podman 4+ | Required for scanner containers |
-| Network (first run) | Pull scanner images once; scans themselves use `--network=none` |
-| Go 1.26+ | Only if building from source |
-| `curl` / `git` / `make` | Installer and source build |
-
----
-
-## 1. Install
-
-### Option A — release script
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
-
-# Pin v0.1.1:
-curl -sSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- v0.1.1
-```
-
-Confirm:
-
-```bash
-kuro version
-# → kuro version v0.1.1
-```
-
-### Option B — from source
+Build from source while release binaries are unavailable:
 
 ```bash
 git clone https://github.com/Haiagari/kuro-core.git
 cd kuro-core
 make build
 export PATH="$PWD/bin:$PATH"
-./bin/kuro version
-```
-
-Optional system install: `sudo make install`.
-
----
-
-## 2. Doctor
-
-```bash
 kuro doctor
-# or: kuro doctor --json
 ```
 
-**What it checks (Core):** container runtime, Git, scanner images, disk space, Kuro binary. It does **not** require Postgres, NATS, or MinIO.
+`doctor` checks runtime, Git, scanner images and disk. Image warnings can occur before the first pull. It does not certify scanner coverage or Trivy DB freshness. Network is needed to obtain images; scan containers use `--network=none`.
 
-**Expected:** exit `0`. Warnings (e.g. images not yet pulled) are OK; critical failures fail the run.
-
-**Pitfall:** If Docker is installed but the daemon is not running, doctor fails. Start Docker/Podman and retry.
-
----
-
-## 3. Scan a clean project
+## First scan
 
 ```bash
-mkdir -p /tmp/kuro-demo-clean && printf 'package main\n\nfunc main() {}\n' > /tmp/kuro-demo-clean/main.go
-
-kuro scan /tmp/kuro-demo-clean
-# JSON (flags after path are supported):
+mkdir -p /tmp/kuro-demo-clean
+printf 'package main\nfunc main() {}\n' > /tmp/kuro-demo-clean/main.go
 kuro scan /tmp/kuro-demo-clean --json
-echo $?   # expect 0 on pass
+# Expected exit 0 and root decision "pass".
 ```
 
-**Expected outcomes:**
-
-- Interactive TUI on a TTY (unless `--json`).
-- JSON includes top-level `"decision": "pass"`.
-- Exit code `0`.
-- **Differential cache:** Clean scans commit file fingerprints to `$HOME/.kuro/cache`. Subsequent scans with zero modified files bypass scanning and pass instantaneously. Use `--no-cache` (or `KURO_NO_CACHE=1`) to force a fresh scan.
-- **Resource protection:** Container scanners are throttled by a concurrency worker pool (default: 2 containers, tunable via `KURO_MAX_CONCURRENCY`) to prevent overloading system resources.
-
-**Pitfall:** First scan may be slow while images pull asynchronously. Re-run after images are cached. Semgrep does **not** use `--config=auto`; Core embeds `semgrep-core.yml` so it works offline under `--network=none`. Any container failure or timeout strictly causes a fail-closed block (`exit 1`).
-
----
-
-## 4. Scan a fixture with a secret (expect block)
+A synthetic secret should block:
 
 ```bash
 mkdir -p /tmp/kuro-demo-secret
-# Synthetic Slack bot token — AWS docs EXAMPLE keys are allowlisted by Gitleaks
 printf 'SLACK_TOKEN=xoxb-123456789012-123456789012-abcdefghijklmnopqrstuvwx\n' > /tmp/kuro-demo-secret/.env
-
 kuro scan /tmp/kuro-demo-secret --json
-echo $?   # expect 1 (block)
+# Expected exit 1 and decision "block". Inspect status/error to distinguish failures.
 ```
 
-**Expected:** `"decision": "block"` (or `blocked`) and exit `1`.
+| Result | Exit | Meaning |
+|---|---:|---|
+| `pass` | 0 | Applicable checks completed and the active policy permits the findings |
+| `review` | 2 | Human review required; the local proxy blocks |
+| `block` / error | 1 | Policy rejection or incomplete analysis |
 
-Exit code cheat sheet:
+A pass is not proof that a repository has no vulnerabilities. It is limited to the selected mode, scanners, rules and available vulnerability data. Every scan executes the applicable scanners; cached file statistics never authorize a pass. `--no-cache` disables those statistics.
 
-| Decision | Code |
-|---|---|
-| pass | 0 |
-| review | 2 |
-| block / error | 1 |
+## Repositories with dependencies
 
----
-
-## 5. Fix / remediate
-
-`kuro fix` walks the tree for obvious hardcoded credentials (e.g. `AKIA…`) and offers interactive or automatic remediation.
+Before scanning a repository whose dependency manifests select Trivy, explicitly prepare its database on a networked host:
 
 ```bash
-# Preview only
-kuro fix /path/to/project --dry-run
-
-# Apply recommended replacements (env var extraction)
-kuro fix /path/to/project --auto
+./scripts/update-trivy-db.sh
+kuro scan ./my-project --json
 ```
 
-Supports Go (`os.Getenv`), Python (`os.environ.get`), JS/TS (`process.env`), and generic `${ENV}` fallbacks. Suppressions land in `.kuro-suppressions.json`.
+The helper mounts only the database download directory, not project source. Scans mount that cache at `/trivy-cache` and run without network. Missing, invalid or expired DB metadata blocks the scan. The default cache is `$HOME/.kuro/trivy`; override with `KURO_TRIVY_CACHE_DIR`. Refresh before `NextUpdate` and at least every 24 hours. Copy its `db/` directory to an offline host when needed. Avoid updating it during a scan. See [scanner details](docs/SCANNER-ARCHITECTURE.md).
 
-**Pitfall:** Fix is heuristic — always review diffs, especially with `--auto`.
-
----
-
-## 6. Canary tokens
+## Release installation (when assets are published)
 
 ```bash
-kuro canary generate --type aws --format env
-kuro canary generate --type github --format json --output /tmp/canary.json
-kuro canary inject ./tests/fixtures --type slack --format env
-kuro canary verify /tmp/canary.json
-kuro canary list
+curl -fsSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh
+# Select an actually published tag:
+# curl -fsSL https://raw.githubusercontent.com/Haiagari/kuro-core/main/scripts/install.sh | sh -s -- vX.Y.Z
 ```
 
-Types: `aws` (default), `github`, `slack`, `jwt`, `generic`. Formats: `env`, `json`, `yaml`, `tf`.
+The installer downloads archives and validates SHA-256 checksums. A tag alone does not guarantee release assets. See [Releases](https://github.com/Haiagari/kuro-core/releases); use source build if none are available. A checksum from the same release detects corruption; it does not independently establish publisher authenticity.
 
----
+## Next tutorials
 
-## 7. Local Git proxy (fail-closed pre-push)
+- [CLI and CI integration](docs/API.md)
+- [Policies and safety floors](docs/POLICY.md)
+- [Architecture and limits](docs/ARCHITECTURE.md)
+- [Attestation verification](docs/ATTESTATION.md)
+- [Synthetic demo](docs/market-validation/DEMO.md)
+- [Contributor checks](tests/README.md)
 
-Preferred one-binary path:
-
-```bash
-export PATH="$PWD/bin:$PATH"    # or: export KURO_BIN=$PWD/bin/kuro
-./bin/kuro proxy
-# equivalents: make proxy
-# optional: ./bin/kuro proxy --addr :8000 --upstream https://github.com
-```
-
-Default `SCAN_MODE=local` runs `kuro scan --json` via the CLI. For Enterprise API mode:
-
-```bash
-SCAN_MODE=api KURO_URL=http://api:8080 KURO_API_KEY=... ./bin/kuro proxy
-```
-
-Wire a remote and push:
-
-```bash
-git remote add proxy http://localhost:8000/<owner>/<repo>.git
-git push proxy main
-```
-
-Policy violations → HTTP 403 + findings on stderr. Clean → forwarded to upstream.
-
-> Docker/standalone still builds from `services/git-proxy`; day-to-day prefer `./bin/kuro proxy`.
-
-**Pitfall:** In local mode the proxy must find `kuro` on `PATH` or via `KURO_BIN`.
-
----
-
-## 8. Optional: Core-local E2E
-
-```bash
-make e2e-core
-# or: bash tests/e2e-core-local.sh
-```
-
-Runs doctor + clean scan (pass/0) + secret scan (block/1) with **no** Postgres/NATS/API.
-
-Enterprise/API proxy E2E remains `tests/e2e-proxy.sh` — do not confuse the two.
-
----
-
-## Troubleshooting
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `doctor` fails on runtime | Docker daemon down / no Podman | Start runtime; re-run `kuro doctor` |
-| Semgrep / scanners hang or empty | Image not pulled; offline DB | Pull images; Trivy retries without offline when DB missing |
-| `scan PATH --json` ignored flags | Fixed in v0.1.1 | Upgrade; flags after path are reordered |
-| Proxy always 403 / error | `KURO_BIN` wrong; scanners missing | Export `KURO_BIN`; run `kuro doctor` |
-| Looking for dashboards / Postgres | Wrong edition | Use Core for local; Enterprise for server stack |
-
----
-
-## Next reading
-
-- [README.md](README.md) — product overview & CLI index  
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — pipeline & proxy  
-- [docs/SCANNER-ARCHITECTURE.md](docs/SCANNER-ARCHITECTURE.md) — hardening & images  
-- [docs/API.md](docs/API.md) — JSON outputs & exit codes  
-- [tests/README.md](tests/README.md) — test suites  
+`kuro fix` is heuristic and requires diff review; use `--dry-run` first. A replacement does not revoke a leaked credential or remove it from Git history. Canary generation does not provide an external alerting service. The proxy is an opt-in Smart-HTTP route; pushes directly to another remote bypass it.

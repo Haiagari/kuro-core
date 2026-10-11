@@ -1,6 +1,5 @@
 package orchestrator
 
-
 import (
 	"crypto/sha256"
 	"encoding/hex"
@@ -21,8 +20,8 @@ type fileCacheEntry struct {
 // ── FileCache ───────────────────────────────────────────────
 
 // FileCache stores file metadata to detect changes between scans.
-// If a file's modtime+size match the cached entry, it is unchanged.
-// If modtime/size differ but the SHA-256 hash matches (e.g. a touch),
+// This cache provides statistics only; it never bypasses security scanners.
+// If the SHA-256 hash matches (e.g. a touch),
 // the entry is updated and the file is still considered unchanged.
 type FileCache struct {
 	mu       sync.Mutex
@@ -53,10 +52,7 @@ func NewFileCache(cacheDir string) (*FileCache, error) {
 // the last time it was cached. Returns (true, hash, nil) if the file is new
 // or its content has changed.
 //
-// Fast path: if modtime+size match the cached entry, the file is unchanged
-// and no hash is computed (hash is returned from the cache).
-//
-// Slow path: if modtime or size differ, the file is hashed and compared.
+// Every check hashes the content, including same-size changes with preserved mtime.
 // If the hash matches, the entry is updated with the new modtime/size.
 func (c *FileCache) IsChanged(path string) (bool, string, error) {
 	c.mu.Lock()
@@ -68,15 +64,10 @@ func (c *FileCache) IsChanged(path string) (bool, string, error) {
 	}
 
 	entry, exists := c.entries[path]
-	modTime := info.ModTime().Unix()
+	modTime := info.ModTime().UnixNano()
 	size := info.Size()
 
-	// Fast path: modtime + size match → unchanged
-	if exists && entry.ModTime == modTime && entry.Size == size {
-		return false, entry.Hash, nil
-	}
-
-	// Slow path: compute hash
+	// Always compute the content hash
 	hash, err := computeFileHash(path)
 	if err != nil {
 		return false, "", err
@@ -84,7 +75,7 @@ func (c *FileCache) IsChanged(path string) (bool, string, error) {
 
 	if exists && entry.Hash == hash {
 		// Content unchanged — only metadata changed (touch, atime, etc.)
-		// Update the entry so the next check hits the fast path.
+		// Refresh metadata for statistics; future checks still hash content.
 		c.entries[path] = fileCacheEntry{
 			ModTime: modTime,
 			Size:    size,
@@ -115,7 +106,7 @@ func (c *FileCache) MarkScanned(path string) error {
 	}
 
 	c.entries[path] = fileCacheEntry{
-		ModTime: info.ModTime().Unix(),
+		ModTime: info.ModTime().UnixNano(),
 		Size:    info.Size(),
 		Hash:    hash,
 	}
