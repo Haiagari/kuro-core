@@ -7,7 +7,7 @@ The local hook gives early feedback. This opt-in GitHub layer scans the proposed
 Core contains intentionally unsafe scanner fixtures and may have existing dependency/IaC findings. The gate adopts a **no new findings** policy rather than silently marking the entire repository clean:
 
 - Scan both base and proposed merge with the same base-built Kuro, default policy, scanner versions and prepared Trivy DB.
-- Pass only if both scans complete consistently and every candidate finding already exists at the same path/line/rule/severity/scanner in a **byte-identical whole file** on the base.
+- Pass only if both scans complete consistently and every candidate finding already exists at the same path/line/rule/severity/scanner in a **byte-identical whole file** on the base. Dependency findings additionally bind package/version detail and a digest of recognized dependency manifests/lockfiles; changing one invalidates dependency-debt inheritance.
 - New findings and changes to any affected file block, even when the finding stays on the same line. Renames also require resolution. This deliberately favors safety over convenience.
 - Existing findings in unchanged files remain visible as counted debt. No automatic test-folder exemptions or inline approval mechanism is added.
 - Scanner errors, malformed reports, unresolved merge parents, symlinks/submodules or unmappable finding paths block. If base itself cannot be analyzed, the gate fails; an error is never a baseline exception.
@@ -41,4 +41,4 @@ If the base or head moves during scanning, update the PR branch and rerun. Cance
 
 ## Validation
 
-`python3 tests/test-pr-gate.py` covers bypassed hooks, unchanged debt, same-line changes, archive-ignore evasion, unsupported links, suppressions, malformed/error reports and token isolation. `python3 tests/e2e-pr-gate.py` uses actual scanner images and a synthetic `git push --no-verify`; candidate ignores cannot hide the introduced Python finding. CI also runs a bootstrap scan of this implementation's proposed merge tree.
+`python3 tests/test-pr-gate.py` covers bypassed hooks, unchanged debt, same-line changes, archive-ignore evasion, unsupported links, suppressions, malformed/error reports and token isolation. `python3 tests/e2e-pr-gate.py` uses actual scanner images and a synthetic `git push --no-verify`; candidate ignores cannot hide the introduced Python finding. CI also runs a bootstrap scan of this implementation's proposed merge tree. Local validation includes 14 Python tests, Go tests/build/vet/race checks and actionlint validation of both changed workflows. Actual production check publication and branch-rule enforcement still require merge and owner activation.

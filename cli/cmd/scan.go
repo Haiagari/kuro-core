@@ -342,6 +342,7 @@ func printJSON(result *orchestrator.ScanResult, scanErr error) {
 		Title    string `json:"title"`
 		File     string `json:"file"`
 		Line     int    `json:"line"`
+		Detail   string `json:"detail,omitempty"`
 	}
 	output := map[string]any{"status": "failed", "decision": "", "findings": []finding{}}
 	if result != nil {
@@ -350,7 +351,11 @@ func printJSON(result *orchestrator.ScanResult, scanErr error) {
 		output["duration"] = result.Duration.Round(time.Millisecond).String()
 		findings := make([]finding, 0, len(result.Findings))
 		for _, f := range result.Findings {
-			findings = append(findings, finding{f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber})
+			detail := ""
+			if f.Scanner == "trivy" {
+				detail = f.Description
+			}
+			findings = append(findings, finding{f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber, detail})
 		}
 		output["findings"] = findings
 	}

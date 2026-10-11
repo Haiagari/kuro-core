@@ -80,7 +80,22 @@ def identities(findings, source, files):
         if not isinstance(line, int) or isinstance(line, bool) or line < 0:
             raise ValueError('Invalid finding location')
         # Whole-file hash prevents changed secrets on the same line from inheriting approval.
-        result.add((*fields, path, line, files[path]))
+        detail = item.get('detail', '')
+        if not isinstance(detail, str) or (fields[0] == 'trivy' and not detail):
+            raise ValueError('Dependency finding lacks package/version detail')
+        dependency_context = ''
+        if fields[0] == 'trivy':
+            # Lockfiles can influence a report attributed to an unchanged manifest.
+            inputs = {p: digest for p, digest in files.items()
+                      if Path(p).name in ('go.mod','go.sum','go.work','go.work.sum','package.json',
+                                          'package-lock.json','yarn.lock','pnpm-lock.yaml','Pipfile',
+                                          'Pipfile.lock','pyproject.toml','poetry.lock','Cargo.toml',
+                                          'Cargo.lock','Gemfile','Gemfile.lock','composer.json',
+                                          'composer.lock','pom.xml','build.gradle','build.gradle.kts')
+                      or p.endswith(('.lock','.lock.json','.csproj'))
+                      or (Path(p).name.startswith('requirements') and p.endswith('.txt'))}
+            dependency_context = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()
+        result.add((*fields, path, line, files[path], detail, dependency_context))
     return result
 
 def evaluate(binary, repo, base, candidate, policy):

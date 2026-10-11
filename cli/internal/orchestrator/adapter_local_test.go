@@ -215,7 +215,7 @@ func TestParseTrivyOutput(t *testing.T) {
 		if f0.FilePath != "package-lock.json" {
 			t.Errorf("expected filepath 'package-lock.json', got %q", f0.FilePath)
 		}
-		if f0.Description != "Prototype Pollution in lodash (4.17.20)" {
+		if f0.Description != "lodash: Prototype Pollution in lodash (4.17.20)" {
 			t.Errorf("expected description with version, got %q", f0.Description)
 		}
 		if f0.LineNumber != 0 {

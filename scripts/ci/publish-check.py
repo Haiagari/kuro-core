@@ -12,9 +12,10 @@ if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo) or not re.fullmatc
 headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
            'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}
 phase = os.environ['KURO_CHECK_PHASE']
-body = {'name': 'Kuro PR Gate', 'head_sha': sha,
+body = {'name': 'Kuro PR Gate',
         'details_url': f'https://github.com/{repo}/actions/runs/{os.environ["GITHUB_RUN_ID"]}'}
 if phase == 'start':
+    body['head_sha'] = sha
     body['status'] = 'in_progress'
     url = f'https://api.github.com/repos/{repo}/check-runs'
     method = 'POST'

@@ -75,6 +75,18 @@ class GateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             gate.identities([{'file':'/src/missing'}], self.repo, {'main.py':'hash'})
 
+    def test_dependency_identity_includes_package_and_lock_context(self):
+        finding = {'scanner':'trivy','severity':'HIGH','title':'CVE-example',
+                   'file':'/src/go.mod','line':0,'detail':'module-a: issue (1.0)'}
+        files = {'go.mod':'same','go.sum':'old'}
+        old = gate.identities([finding], self.repo, files)
+        changed_lock = gate.identities([finding], self.repo, dict(files, **{'go.sum':'new'}))
+        self.assertNotEqual(old, changed_lock)
+        changed_package = gate.identities([dict(finding, detail='module-b: issue (1.0)')], self.repo, files)
+        self.assertNotEqual(old, changed_package)
+        with self.assertRaises(ValueError):
+            gate.identities([dict(finding, detail='')], self.repo, files)
+
 class PublisherTests(unittest.TestCase):
     def publish(self, state, job_status='success'):
         with tempfile.TemporaryDirectory() as temp:
@@ -87,10 +99,20 @@ class PublisherTests(unittest.TestCase):
                 runpy.run_path(str(ROOT/'scripts/ci/publish-check.py'))
             request = call.call_args.args[0]
             body = json.loads(request.data)
-            self.assertEqual(body['head_sha'], 'a'*40)
+            self.assertNotIn('head_sha', body)
             self.assertEqual(request.full_url, 'https://api.github.com/repos/owner/repo/check-runs/123')
             self.assertNotIn('never-echo-this', request.data.decode())
             return body
+    def test_start_is_head_bound(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp)/'output'
+            env = {'GITHUB_REPOSITORY':'owner/repo', 'KURO_HEAD_SHA':'b'*40,
+                   'GH_TOKEN':'token', 'GITHUB_RUN_ID':'42', 'KURO_CHECK_PHASE':'start',
+                   'GITHUB_OUTPUT':str(output)}
+            with patch.dict(os.environ, env), patch.object(urllib.request, 'urlopen', return_value=io.BytesIO(b'{"id":123}')) as call:
+                runpy.run_path(str(ROOT/'scripts/ci/publish-check.py'))
+            self.assertEqual(json.loads(call.call_args.args[0].data)['head_sha'], 'b'*40)
+            self.assertEqual(output.read_text(), 'check_id=123\n')
     def test_success_is_head_bound(self):
         self.assertEqual(self.publish('pass')['conclusion'], 'success')
     def test_block_is_failure(self):

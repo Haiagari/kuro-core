@@ -35,4 +35,9 @@ with tempfile.TemporaryDirectory(prefix='kuro-gate-acceptance-') as temp:
     assert evaluate(unsafe, unchanged)['state'] == 'pass'
     changed = commit({'main.py':'value = ev'+'al(input()) # changed\n'})
     assert evaluate(unsafe, changed)['state'] == 'block', 'Same-line finding inherited baseline approval'
-print('Native PR gate acceptance passed: clean, bypassed hook, ignores, unchanged debt, changed affected file.')
+    # Builtin secret rules must survive candidate allowlists and allow comments too.
+    fake = 'xoxb-' + '123456789012-' * 2 + 'abcdefghijklmnopqrstuvwx'
+    secret = commit({'main.py':'value = 2\n', 'secret.env':'SLACK_TOKEN='+fake+' # gitleaks' + ':allow\n'})
+    result = evaluate(base, secret)
+    assert result['state'] == 'block' and any(f['scanner'] == 'gitleaks' for f in result['introduced'])
+print('Native PR gate acceptance passed: clean, bypassed hook, ignores, unchanged debt, changed affected file, secret allowlist evasion.')
