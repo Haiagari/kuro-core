@@ -16,7 +16,7 @@ Tags pin versions but are not immutable digests. Core does not currently attest 
 
 ## Execution controls
 
-Every scan container uses `--rm`, `--network=none`, `--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--memory=512m`, `--cpus=1.0`. Source mounts are read-only with `:ro,Z`; Semgrep rules are also read-only. Trivy's separate database/result cache is writable with `:Z`. The containers use their image's default user; these controls do not imply a non-root user or a read-only root filesystem.
+Every scan container uses `--rm`, `--network=none`, `--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--memory=512m`, `--cpus=1.0`. Source mounts are read-only with `:ro,Z`; Semgrep rules are also read-only. Trivy's separate database/result cache is writable with `:Z`. Containers use the caller UID/GID to read private source and bundled-rule directories without changing host permissions, with an ephemeral home at `/tmp`. Rootless Podman uses `--userns=keep-id`. A root caller still runs as root; the root filesystem is writable.
 
 `KURO_MAX_CONCURRENCY` defaults to 2. Per-scanner timeout is 5 minutes, or 15 in history mode. Source is read live; a read-only mount prevents scanner writes but does not prevent other host processes modifying files. Avoid edits during scans. Container isolation reduces exposure; it is not a guarantee of zero exfiltration through all host channels or immunity to runtime vulnerabilities.
 

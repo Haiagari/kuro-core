@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,6 +38,15 @@ func (a *LocalAdapter) runSemgrep(ctx context.Context, path string) ([]Finding, 
 		},
 	)
 	if err != nil {
+		// Semgrep's JSON mode reports configuration errors on stdout, not stderr.
+		var report struct {
+			Errors []struct {
+				Message string `json:"message"`
+			} `json:"errors"`
+		}
+		if json.Unmarshal(output, &report) == nil && len(report.Errors) > 0 {
+			return nil, fmt.Errorf("%w: %s", err, report.Errors[0].Message)
+		}
 		return nil, err
 	}
 

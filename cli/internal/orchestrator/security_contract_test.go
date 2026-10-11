@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -187,7 +188,7 @@ func TestTrivyOfflineArgsAndProcessFailure(t *testing.T) {
 		t.Fatal("Trivy failure with JSON accepted")
 	}
 	args, _ := os.ReadFile(log)
-	for _, flag := range []string{"--network=none", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--skip-db-update", "--skip-java-db-update", "--offline-scan", "--cache-dir=/trivy-cache"} {
+	for _, flag := range []string{"--network=none", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--skip-db-update", "--skip-java-db-update", "--offline-scan", "--cache-dir=/trivy-cache", "HOME=/tmp", "--user\n" + strconv.Itoa(os.Getuid()) + ":" + strconv.Itoa(os.Getgid()), "GIT_CONFIG_VALUE_0=/src"} {
 		if !strings.Contains(string(args), flag) {
 			t.Fatalf("missing %s: %s", flag, args)
 		}
@@ -210,5 +211,14 @@ func TestTrufflehogNativeGitMetadata(t *testing.T) {
 	findings, err := parseTrufflehogOutput([]byte(data))
 	if err != nil || len(findings) != 1 || findings[0].FilePath != "config.go" || findings[0].LineNumber != 12 || findings[0].Verified {
 		t.Fatalf("native metadata lost: %v %v", findings, err)
+	}
+}
+
+func TestSemgrepConfigurationFailureIncludesDiagnostic(t *testing.T) {
+	runtime := filepath.Join(t.TempDir(), "runtime")
+	os.WriteFile(runtime, []byte("#!/bin/sh\nprintf '%s' '{\"errors\":[{\"message\":\"Invalid YAML rule\"}],\"results\":[]}'\nexit 7\n"), 0755)
+	a := &LocalAdapter{runtime: runtime}
+	if _, err := a.runSemgrep(context.Background(), t.TempDir()); err == nil || !strings.Contains(err.Error(), "Invalid YAML rule") {
+		t.Fatalf("missing scanner configuration diagnostic: %v", err)
 	}
 }
