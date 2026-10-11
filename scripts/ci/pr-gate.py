@@ -91,7 +91,7 @@ def evaluate(binary, repo, base, candidate, policy):
         base_files = snapshot(repo, base, before)
         head_files = snapshot(repo, candidate, after)
         for path, digest in head_files.items():
-            if (base_files.get(path) != digest and (path.endswith('.tf') or Path(path).name == 'Dockerfile')
+            if (base_files.get(path) != digest and (path.endswith('.tf') or 'dockerfile' in Path(path).name.lower())
                     and SUPPRESS.search((after / path).read_bytes())):
                 raise ValueError('Changed source contains a Checkov suppression directive')
         old = identities(scan(binary, before, policy), before, base_files)
@@ -99,7 +99,9 @@ def evaluate(binary, repo, base, candidate, policy):
         introduced = new - old
         return {'state': 'pass' if not introduced else 'block',
                 'base_findings': len(old), 'candidate_findings': len(new),
-                'introduced_findings': len(introduced), 'base_sha': base,
+                'introduced_findings': len(introduced),
+                'introduced': [{'scanner': f[0], 'severity': f[1], 'rule': f[2], 'file': f[3], 'line': f[4]}
+                               for f in sorted(introduced)], 'base_sha': base,
                 'candidate_sha': candidate}
 
 def main():

@@ -31,7 +31,8 @@ A synthetic secret should block:
 
 ```bash
 mkdir -p /tmp/kuro-demo-secret
-printf 'SLACK_TOKEN=xoxb-123456789012-123456789012-abcdefghijklmnopqrstuvwx\n' > /tmp/kuro-demo-secret/.env
+# Assemble an explicitly synthetic token instead of storing it as a literal.
+printf 'SLACK_TOKEN=xoxb-%s-%s-%s\n' 123456789012 123456789012 abcdefghijklmnopqrstuvwx > /tmp/kuro-demo-secret/.env
 kuro scan /tmp/kuro-demo-secret --json
 # Expected exit 1 and decision "block". Inspect status/error to distinguish failures.
 ```

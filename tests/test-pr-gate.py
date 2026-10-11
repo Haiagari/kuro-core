@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import importlib.util
 import json
+import io
+import runpy
+import urllib.request
 import os
 from pathlib import Path
 import subprocess
@@ -71,5 +74,30 @@ class GateTests(unittest.TestCase):
     def test_unknown_finding_path_rejected(self):
         with self.assertRaises(ValueError):
             gate.identities([{'file':'/src/missing'}], self.repo, {'main.py':'hash'})
+
+class PublisherTests(unittest.TestCase):
+    def publish(self, state, job_status='success'):
+        with tempfile.TemporaryDirectory() as temp:
+            result = Path(temp)/'result.json'
+            result.write_text(json.dumps({'state':state, 'secret':'never-echo-this'}))
+            env = {'GITHUB_REPOSITORY':'owner/repo', 'KURO_HEAD_SHA':'a'*40,
+                   'GH_TOKEN':'token', 'GITHUB_RUN_ID':'42', 'KURO_CHECK_PHASE':'finish',
+                   'KURO_GATE_RESULT':str(result), 'KURO_CHECK_ID':'123', 'KURO_JOB_STATUS':job_status}
+            with patch.dict(os.environ, env), patch.object(urllib.request, 'urlopen', return_value=io.BytesIO(b'{"id":123}')) as call:
+                runpy.run_path(str(ROOT/'scripts/ci/publish-check.py'))
+            request = call.call_args.args[0]
+            body = json.loads(request.data)
+            self.assertEqual(body['head_sha'], 'a'*40)
+            self.assertEqual(request.full_url, 'https://api.github.com/repos/owner/repo/check-runs/123')
+            self.assertNotIn('never-echo-this', request.data.decode())
+            return body
+    def test_success_is_head_bound(self):
+        self.assertEqual(self.publish('pass')['conclusion'], 'success')
+    def test_block_is_failure(self):
+        self.assertEqual(self.publish('block')['conclusion'], 'failure')
+    def test_error_is_failure(self):
+        self.assertEqual(self.publish('error')['conclusion'], 'failure')
+    def test_failed_job_cannot_publish_success(self):
+        self.assertEqual(self.publish('pass','failure')['conclusion'], 'failure')
 
 if __name__ == '__main__': unittest.main()

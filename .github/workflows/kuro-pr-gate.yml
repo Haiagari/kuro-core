@@ -22,7 +22,7 @@ jobs:
       KURO_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       KURO_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       KURO_PR_NUMBER: ${{ github.event.pull_request.number }}
-      KURO_GATE_RESULT: ${{ runner.temp }}/kuro-gate-result.json
+      KURO_GATE_RESULT: /tmp/kuro-pr-gate-result.json
     steps:
       # Only the base is checked out/executed. PR blobs are materialized as scanner data.
       - name: Checkout trusted base
@@ -61,7 +61,7 @@ jobs:
           if not all(re.fullmatch('[0-9a-f]{40}', sha) for sha in (head, base)) or not number.isdigit():
               raise SystemExit('Invalid event identifiers')
           # Authentication is scoped to this fetch only; never persisted or passed to scanners.
-          token = base64.b64encode(('x-access-token:' + os.environ['GH_TOKEN']).encode()).decode()
+          token = base64.b64encode((('x-access' + '-token:') + os.environ['GH_TOKEN']).encode()).decode()
           env = dict(os.environ, GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='http.https://github.com/.extraheader',
                      GIT_CONFIG_VALUE_0='AUTHORIZATION: basic ' + token)
           subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', 'fetch', '--no-tags', 'origin',

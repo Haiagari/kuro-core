@@ -20,7 +20,7 @@ This stage is stricter than Core's local severity policy for introduced findings
 
 `kuro scan --ci` uses builtin Gitleaks rules instead of candidate config/ignore files or allow comments, disables Semgrep inline/Git/Semgrep ignores, and ignores candidate Trivy ignore files. New Checkov suppressions in changed Terraform/Dockerfile sources fail before scanning. Existing Checkov suppressions in unchanged base files remain part of adopted debt; no claim is made that they were rescanned without suppression.
 
-Containers have no network, read-only source, restricted resources/capabilities and no GitHub token. Online image/DB preparation has no source mount. Host subprocesses receive a restricted environment. Raw scanner reports/diagnostics are not logged or uploaded; the gate publishes fixed summaries and counts.
+Containers have no network, read-only source, restricted resources/capabilities and no GitHub token. Online image/DB preparation has no source mount. Host subprocesses receive a restricted environment. Raw scanner reports/diagnostics are not logged or uploaded; the gate publishes fixed check summaries, counts and introduced-finding metadata (rule/path/line, without matched source or secret values).
 
 The workflow has `contents: read` and `checks: write` only, references no repository secrets, uses immutable action SHAs, disables shared Go caching and persists no Git credentials. A custom check named **Kuro PR Gate** is created on the exact PR head SHA, since the target-event workflow runs on the base context. Missing/unfinished publication cannot satisfy a required successful check.
 
