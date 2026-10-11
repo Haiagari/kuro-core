@@ -31,7 +31,8 @@ A synthetic secret should block:
 
 ```bash
 mkdir -p /tmp/kuro-demo-secret
-printf 'SLACK_TOKEN=xoxb-123456789012-123456789012-abcdefghijklmnopqrstuvwx\n' > /tmp/kuro-demo-secret/.env
+# Assemble an explicitly synthetic token instead of storing it as a literal.
+printf 'SLACK_TOKEN=xoxb-%s-%s-%s\n' 123456789012 123456789012 abcdefghijklmnopqrstuvwx > /tmp/kuro-demo-secret/.env
 kuro scan /tmp/kuro-demo-secret --json
 # Expected exit 1 and decision "block". Inspect status/error to distinguish failures.
 ```
@@ -75,3 +76,7 @@ The installer downloads archives and validates SHA-256 checksums. A tag alone do
 - [Contributor checks](tests/README.md)
 
 `kuro fix` is heuristic and requires diff review; use `--dry-run` first. A replacement does not revoke a leaked credential or remove it from Git history. Canary generation does not provide an external alerting service. The proxy is an opt-in Smart-HTTP route; pushes directly to another remote bypass it.
+
+### Optional GitHub merge gate
+
+See [Trusted Kuro PR Gate](docs/CI_GATE.md) for base-controlled CI scanning and activation as a required merge check. Its adoption policy blocks introduced findings and changes to affected files; unchanged existing findings remain counted debt. Installation alone does not activate branch enforcement.

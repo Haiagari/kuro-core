@@ -26,3 +26,5 @@ Installer tests run the real shell installer against local archives/checksums an
 pass=0, review=2, block/error=1. Local proxy rejects review and block. A successful unit suite is not a scanner coverage or deployment certification. Record exactly which runtime-dependent checks ran, failed or were skipped.
 
 Related: [CONTRIBUTING](../CONTRIBUTING.md), [scanner contract](../docs/SCANNER-ARCHITECTURE.md), [CLI](../docs/API.md).
+
+PR gate: `python3 tests/test-pr-gate.py` (local contracts) and `python3 tests/e2e-pr-gate.py` (Docker/Podman native acceptance). See [CI gate](../docs/CI_GATE.md) for trust and activation limits.

@@ -132,7 +132,7 @@ func parseTrivyOutput(data []byte) ([]Finding, error) {
 				Severity:    v.Severity,
 				Title:       v.VulnerabilityID,
 				FilePath:    r.Target,
-				Description: fmt.Sprintf("%s (%s)", v.Title, v.InstalledVersion),
+				Description: fmt.Sprintf("%s: %s (%s)", v.PkgName, v.Title, v.InstalledVersion),
 			})
 		}
 	}

@@ -21,19 +21,21 @@ func (a *LocalAdapter) runSemgrep(ctx context.Context, path string) ([]Finding, 
 		return nil, fmt.Errorf("write semgrep rules: %w", err)
 	}
 
-	output, err := a.runContainer(ctx,
-		semgrepImage,
-		[]string{
-			"semgrep", "scan",
-			"--config=/kuro-rules/semgrep-core.yml",
-			"--metrics=off",
-			"--disable-version-check",
-			"--jobs=1",
-			"--strict",
-			"--max-memory", "350",
-			"--json",
-			"/src",
-		},
+	args := []string{
+		"semgrep", "scan",
+		"--config=/kuro-rules/semgrep-core.yml",
+		"--metrics=off",
+		"--disable-version-check",
+		"--jobs=1",
+		"--strict",
+		"--max-memory", "350",
+		"--json",
+		"/src",
+	}
+	if a.ciMode {
+		args = append(args, "--disable-nosem", "--no-git-ignore", "--x-ignore-semgrepignore-files")
+	}
+	output, err := a.runContainer(ctx, semgrepImage, args,
 		map[string]string{
 			path:     "/src:ro,Z",
 			rulesDir: "/kuro-rules:ro,Z",

@@ -22,6 +22,9 @@ func (a *LocalAdapter) runContainer(ctx context.Context, image string, args []st
 		}
 	}
 	cmdArgs = append(cmdArgs, "--env", "HOME=/tmp", "--env", "GIT_CONFIG_COUNT=1", "--env", "GIT_CONFIG_KEY_0=safe.directory", "--env", "GIT_CONFIG_VALUE_0=/src")
+	if a.ciMode && image == gitleaksImage {
+		cmdArgs = append(cmdArgs, "--env", "GITLEAKS_CONFIG_TOML=[extend]\nuseDefault = true")
+	}
 	for host, container := range volumes {
 		cmdArgs = append(cmdArgs, "-v", host+":"+container)
 	}

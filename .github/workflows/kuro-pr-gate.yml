@@ -1,0 +1,104 @@
+name: Trusted Kuro PR Gate
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: kuro-pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Trusted Kuro Gate Runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KURO_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      KURO_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      KURO_PR_NUMBER: ${{ github.event.pull_request.number }}
+      KURO_GATE_RESULT: /tmp/kuro-pr-gate-result.json
+    steps:
+      # Only the base is checked out/executed. PR blobs are materialized as scanner data.
+      - name: Checkout trusted base
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Start head-bound check
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: start
+        run: python3 scripts/ci/publish-check.py
+      - name: Set up trusted toolchain
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.4'
+          cache: false
+      - name: Build trusted Kuro
+        run: make build
+      - name: Prepare scanner images and data without PR source mounts
+        run: |
+          docker pull docker.io/zricethezav/gitleaks:v8.30.1
+          docker pull docker.io/semgrep/semgrep:1.165.0
+          docker pull docker.io/aquasec/trivy:0.57.0
+          docker pull docker.io/bridgecrew/checkov:3.2.400
+          ./scripts/update-trivy-db.sh
+      - name: Fetch Git objects and verify proposed merge parents
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, re, subprocess
+          head, base, number = (os.environ[k] for k in ('KURO_HEAD_SHA', 'KURO_BASE_SHA', 'KURO_PR_NUMBER'))
+          if not all(re.fullmatch('[0-9a-f]{40}', sha) for sha in (head, base)) or not number.isdigit():
+              raise SystemExit('Invalid event identifiers')
+          # Authentication is scoped to this fetch only; never persisted or passed to scanners.
+          token = base64.b64encode((('x-access' + '-token:') + os.environ['GH_TOKEN']).encode()).decode()
+          env = dict(os.environ, GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='http.https://github.com/.extraheader',
+                     GIT_CONFIG_VALUE_0='AUTHORIZATION: basic ' + token)
+          subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', 'fetch', '--no-tags', 'origin',
+                          f'refs/pull/{number}/merge'], env=env, check=True, capture_output=True)
+          parents = subprocess.check_output(['git', 'show', '-s', '--format=%P', 'FETCH_HEAD'], text=True).split()
+          if parents != [base, head]:
+              raise SystemExit('PR or base moved: update branch and rerun the gate')
+          candidate = subprocess.check_output(['git', 'rev-parse', 'FETCH_HEAD'], text=True).strip()
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'KURO_CANDIDATE_SHA={candidate}\n')
+          PY
+      - name: Start verified merge-snapshot check
+        id: merge_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: start
+          KURO_HEAD_SHA: ${{ env.KURO_CANDIDATE_SHA }}
+        run: python3 scripts/ci/publish-check.py
+      - name: Scan base and proposed merge with trusted configuration
+        run: |
+          python3 scripts/ci/pr-gate.py --binary "$PWD/bin/kuro" --repo "$PWD" \
+            --base "$KURO_BASE_SHA" --candidate "$KURO_CANDIDATE_SHA" \
+            --policy "$PWD/deploy/policies/default-policy.json" --output "$KURO_GATE_RESULT"
+      - name: Finish verified merge-snapshot check
+        if: always() && steps.merge_check.outputs.check_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: finish
+          KURO_HEAD_SHA: ${{ env.KURO_CANDIDATE_SHA }}
+          KURO_CHECK_ID: ${{ steps.merge_check.outputs.check_id }}
+          KURO_JOB_STATUS: ${{ job.status }}
+        run: python3 scripts/ci/publish-check.py
+      - name: Finish head-bound check
+        if: always() && steps.check.outputs.check_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: finish
+          KURO_CHECK_ID: ${{ steps.check.outputs.check_id }}
+          KURO_JOB_STATUS: ${{ job.status }}
+        run: python3 scripts/ci/publish-check.py

@@ -36,6 +36,7 @@ func RunScan(args []string) {
 	remoteFlag := fs.Bool("remote", false, "Force remote mode (send to server)")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format")
 	historyFlag := fs.Bool("history", false, "Scan full git history (local mode only)")
+	ciFlag := fs.Bool("ci", false, "Ignore source-controlled scanner suppressions for trusted CI")
 	noCacheFlag := fs.Bool("no-cache", false, "Disable file statistics cache (scanners always run)")
 	fs.Bool("tui", false, "Enable TUI mode (auto-detected on TTY)")
 
@@ -100,6 +101,7 @@ func RunScan(args []string) {
 	} else if isLocalPath(target) {
 		history := *historyFlag
 		local := orchestrator.NewLocalAdapter(history)
+		local.SetCIMode(*ciFlag)
 		if *noCacheFlag {
 			local.SetNoCache(true)
 		}
@@ -340,6 +342,7 @@ func printJSON(result *orchestrator.ScanResult, scanErr error) {
 		Title    string `json:"title"`
 		File     string `json:"file"`
 		Line     int    `json:"line"`
+		Detail   string `json:"detail,omitempty"`
 	}
 	output := map[string]any{"status": "failed", "decision": "", "findings": []finding{}}
 	if result != nil {
@@ -348,7 +351,11 @@ func printJSON(result *orchestrator.ScanResult, scanErr error) {
 		output["duration"] = result.Duration.Round(time.Millisecond).String()
 		findings := make([]finding, 0, len(result.Findings))
 		for _, f := range result.Findings {
-			findings = append(findings, finding{f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber})
+			detail := ""
+			if f.Scanner == "trivy" {
+				detail = f.Description
+			}
+			findings = append(findings, finding{f.Scanner, f.Severity, f.Title, f.FilePath, f.LineNumber, detail})
 		}
 		output["findings"] = findings
 	}

@@ -219,3 +219,22 @@ func TestScanJSONPreservesControlCharacters(t *testing.T) {
 		}
 	}
 }
+
+func TestScanJSONRetainsDependencyIdentityDetail(t *testing.T) {
+	result := &orchestrator.ScanResult{Status: "completed", Decision: "block", Findings: []orchestrator.Finding{
+		{Scanner: "trivy", Title: "CVE-example", Description: "module-a: issue (1.0)"},
+		{Scanner: "trivy", Title: "CVE-example", Description: "module-b: issue (1.0)"},
+	}}
+	out := captureStdout(t, func() { printJSON(result, nil) })
+	var report struct {
+		Findings []struct {
+			Detail string `json:"detail"`
+		} `json:"findings"`
+	}
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Findings) != 2 || report.Findings[0].Detail == report.Findings[1].Detail || report.Findings[0].Detail == "" {
+		t.Fatalf("dependency identities collapsed: %s", out)
+	}
+}
