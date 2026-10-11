@@ -80,3 +80,5 @@ The installer downloads archives and validates SHA-256 checksums. A tag alone do
 ### Optional GitHub merge gate
 
 See [Trusted Kuro PR Gate](docs/CI_GATE.md) for base-controlled CI scanning and activation as a required merge check. Its adoption policy blocks introduced findings and changes to affected files; unchanged existing findings remain counted debt. Installation alone does not activate branch enforcement.
+
+The [baseline debt audit](docs/SECURITY_DEBT.md) records the 27 finding classifications, targeted dependency remediation and verified mandatory merge enforcement.
