@@ -11,6 +11,8 @@ Date: 2026-10-11. Base: `d4c83bd675d0279553524b6495d3511622e90f69` (`main`). Cha
 - Always hash files for statistics; remove source-cache and local proxy approval bypasses.
 - Require trusted-key attestation verification, DSSE PAE by default, expected-commit binding and explicit legacy compatibility. Inspection stays unverified.
 - Align release filenames and source-version labeling; repair documented Core helper entrypoints.
+- Preserve valid JSON even for ANSI/control characters in scanner errors; run containers as the caller so private source and bundled-rule directories stay readable.
+- Repair invalid offline Semgrep rule YAML; disable metrics/version lookups and limit scanner concurrency.
 - Align README, guides and diagram labels with implemented behavior; add a policy contract and a Docker CI scanner job.
 
 ## Executed locally
@@ -31,9 +33,20 @@ Date: 2026-10-11. Base: `d4c83bd675d0279553524b6495d3511622e90f69` (`main`). Cha
 
 Some tests use fake container executables and synthetic local release/DB fixtures. Those validate error propagation and command contracts, not actual scanner image execution. The real Git-note tests exercise signature verification and reject a signed note copied to another commit.
 
-## Remaining acceptance evidence
+## Executed in GitHub CI
 
-The CI `Native Scanner Contracts` job pulls pinned image tags, prepares the DB without source mounts, runs Core clean/secret E2E and `tests/e2e-scanner-contracts.sh`. Its result must be checked separately before accepting real-image compatibility. Rootless Podman/SELinux, macOS runtime integration, native Windows/WSL and a production upstream-authenticated proxy were not validated here.
+Implementation commit: `0f06943e9ad7ea40d8f814e917f5c81f0bdc61cf`.
+
+- [CI run 38177628763](https://github.com/Haiagari/kuro-core/actions/runs/38177628763): **success**, both `Lint and Test` and `Native Scanner Contracts`.
+- [Secret scanning run 38177628786](https://github.com/Haiagari/kuro-core/actions/runs/38177628786): **success**.
+- Native Docker tests pulled all five pinned images and prepared the vulnerability DB without source mounts. Clean source completed/pass/exit 0; a synthetic secret completed/block/exit 1.
+- Additional fixtures completed/block: vulnerable PyYAML dependency (2 Trivy findings), insecure Dockerfile (2 Checkov findings), Python eval (1 Semgrep finding), and a removed historical secret (1 Gitleaks finding). TruffleHog history execution completed successfully with 0 findings for this synthetic token; this does not establish its detector coverage.
+
+The real-container runs exposed and led to corrections for private-directory permissions, invalid JSON escaping, invalid rule YAML and unwanted version lookups. Semgrep now completes the small clean/secret fixtures in about 3 seconds without network access.
+
+## Remaining limits
+
+Rootless Podman/SELinux, macOS runtime integration, native Windows/WSL and a production upstream-authenticated proxy were not validated here. The local Semgrep reproduction was stopped by automatic approval review over attempted outbound version-check access; real-image acceptance above uses Docker with `--network=none`, metrics off and version checks disabled.
 
 ## Material behavior changes
 
