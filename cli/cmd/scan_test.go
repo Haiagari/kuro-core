@@ -1,7 +1,7 @@
 package cmd
 
-
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -200,5 +200,22 @@ func TestReorderFlagsBeforeArgs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestScanJSONPreservesControlCharacters(t *testing.T) {
+	message := "scanner failed: \x1b[31merror\x1b[0m\n\t\x00"
+	for _, result := range []*orchestrator.ScanResult{nil, failedScanResult()} {
+		out := captureStdout(t, func() { printJSON(result, errors.New(message)) })
+		var report struct {
+			Error  string
+			Status string
+		}
+		if err := json.Unmarshal([]byte(out), &report); err != nil {
+			t.Fatalf("invalid JSON: %v: %s", err, out)
+		}
+		if report.Error != message || report.Status != "failed" {
+			t.Fatalf("incorrect report: %#v", report)
+		}
 	}
 }
