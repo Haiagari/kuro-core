@@ -73,11 +73,27 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write(f'KURO_CANDIDATE_SHA={candidate}\n')
           PY
+      - name: Start verified merge-snapshot check
+        id: merge_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: start
+          KURO_HEAD_SHA: ${{ env.KURO_CANDIDATE_SHA }}
+        run: python3 scripts/ci/publish-check.py
       - name: Scan base and proposed merge with trusted configuration
         run: |
           python3 scripts/ci/pr-gate.py --binary "$PWD/bin/kuro" --repo "$PWD" \
             --base "$KURO_BASE_SHA" --candidate "$KURO_CANDIDATE_SHA" \
             --policy "$PWD/deploy/policies/default-policy.json" --output "$KURO_GATE_RESULT"
+      - name: Finish verified merge-snapshot check
+        if: always() && steps.merge_check.outputs.check_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KURO_CHECK_PHASE: finish
+          KURO_HEAD_SHA: ${{ env.KURO_CANDIDATE_SHA }}
+          KURO_CHECK_ID: ${{ steps.merge_check.outputs.check_id }}
+          KURO_JOB_STATUS: ${{ job.status }}
+        run: python3 scripts/ci/publish-check.py
       - name: Finish head-bound check
         if: always() && steps.check.outputs.check_id != ''
         env:
