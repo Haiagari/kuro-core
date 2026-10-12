@@ -1,5 +1,7 @@
 # Trusted Kuro PR Gate
 
+Status for `Haiagari/kuro-core` on 2026-10-11: installed in `main`, production publication verified, and `Protect main` actively requires `Kuro PR Gate` from GitHub Actions (integration 15368), with no bypass actors. A non-draft synthetic PR had passing lint/secret checks, a failing Kuro gate and GitHub merge state `blocked`; it was closed without merge. See [debt audit](SECURITY_DEBT.md) and [probe PR #20](https://github.com/Haiagari/kuro-core/pull/20).
+
 The local hook gives early feedback. This opt-in GitHub layer scans the proposed merge snapshot even if the author used `git push --no-verify`. It protects integration into `main`, not initial upload of source/secrets to GitHub or other branches.
 
 ## Acceptance policy
@@ -26,7 +28,7 @@ The workflow has `contents: read` and `checks: write` only, references no reposi
 
 This trusts the base, its dependencies and scanner images, GitHub Actions and administrators. Administrators can change/disable rules. GitHub Actions as an expected check source is not an identity unique to this workflow; malicious contributors with write access who can create other privileged workflows require stronger organization-level workflow controls. This stage does not claim tamper resistance against repository administrators or all write-access collaborators.
 
-## Activate after merge
+## Activation procedure for another installation
 
 The new target-event workflow is unavailable on the base until this implementation is merged. The initial PR therefore runs bootstrap/native acceptance in ordinary CI; that bootstrap executes the reviewed PR implementation and is **validation**, not a trusted enforcement check.
 
@@ -41,4 +43,4 @@ If the base or head moves during scanning, update the PR branch and rerun. Cance
 
 ## Validation
 
-`python3 tests/test-pr-gate.py` covers bypassed hooks, unchanged debt, same-line changes, archive-ignore evasion, unsupported links, suppressions, malformed/error reports and token isolation. `python3 tests/e2e-pr-gate.py` uses actual scanner images and a synthetic `git push --no-verify`; candidate ignores cannot hide the introduced Python finding. CI also runs a bootstrap scan of this implementation's proposed merge tree. Local validation includes 14 Python tests, Go tests/build/vet/race checks and actionlint validation of both changed workflows. Actual production check publication and branch-rule enforcement still require merge and owner activation.
+`python3 tests/test-pr-gate.py` covers bypassed hooks, unchanged debt, same-line changes, archive-ignore evasion, unsupported links, suppressions, malformed/error reports and token isolation. `python3 tests/e2e-pr-gate.py` uses actual scanner images and a synthetic `git push --no-verify`; candidate ignores cannot hide the introduced Python finding. CI also runs a bootstrap scan of this implementation's proposed merge tree. Local validation includes 14 Python tests, Go tests/build/vet/race checks and actionlint validation of both changed workflows. Production publication and mandatory enforcement were subsequently verified for this repository on 2026-10-11; other installations must complete the activation procedure.
