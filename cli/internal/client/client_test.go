@@ -28,9 +28,9 @@ func TestClient_HealthCheck(t *testing.T) {
 		t.Fatal("expected HealthCheck to return true")
 	}
 
-	badClient := New("http://invalid.localhost:99999", "bad")
+	badClient := New("https://invalid.localhost:99999", "bad")
 	if badClient.HealthCheck() {
-		t.Fatal("expected HealthCheck on invalid host to return false")
+		t.Fatal("expected HealthCheck on invalid endpoint to return false")
 	}
 }
 

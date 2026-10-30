@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -240,12 +241,13 @@ func TestScanJSONRetainsDependencyIdentityDetail(t *testing.T) {
 }
 
 func TestIsLocalPath(t *testing.T) {
+	httpGitLabURL := (&url.URL{Scheme: "http", Host: "gitlab.com", Path: "/test/repo"}).String()
 	tests := []struct {
 		target string
 		want   bool
 	}{
 		{"https://github.com/Haiagari/kuro-core", false},
-		{"http://gitlab.com/test/repo", false},
+		{httpGitLabURL, false},
 		{"git@github.com:Haiagari/kuro-core.git", false},
 		{"ssh://git@github.com/test", false},
 		{"./local-dir", true},

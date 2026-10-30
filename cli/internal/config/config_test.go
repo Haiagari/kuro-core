@@ -31,7 +31,8 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 		t.Fatalf("expected empty APIKey from non-existent config, got %s", loaded.APIKey)
 	}
 
-	loaded.APIKey = "kuro-test-key-123"
+	testKey := "kuro-test-key-123"
+	loaded.APIKey = testKey
 	loaded.APIURL = "https://kuro.internal:8443"
 	if err := Save(loaded); err != nil {
 		t.Fatalf("save config failed: %v", err)
@@ -41,7 +42,7 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("re-load config failed: %v", err)
 	}
-	if reloaded.APIKey != "kuro-test-key-123" || reloaded.APIURL != "https://kuro.internal:8443" {
+	if reloaded.APIKey != testKey || reloaded.APIURL != "https://kuro.internal:8443" {
 		t.Fatalf("unexpected reloaded config: %+v", reloaded)
 	}
 
