@@ -47,7 +47,9 @@ func main() {
 	case "attest":
 		cmd.RunAttest(os.Args[2:])
 	case "fix", "triage":
-		cmd.RunFix(os.Args[2:])
+		if status := cmd.RunFixWithStatus(os.Args[2:]); status != 0 {
+			os.Exit(status)
+		}
 	case "proxy":
 		cmd.RunProxy(os.Args[2:])
 	case "license":
@@ -77,8 +79,8 @@ func printUsage() {
 │  │                                                     │   │
 │  │  scan <path> [--json] [--history]                   │   │
 │  │    Scan locally via Docker/Podman scanners          │   │
-│  │  fix [path] [--dry-run|--auto]                      │   │
-│  │    Interactive secret remediation (Bubbletea TUI)   │   │
+│  │  fix [path] [--dry-run|--auto|--report <file>]      │   │
+│  │    Heuristic or scan-report secret remediation      │   │
 │  │  canary generate|inject|verify|list                 │   │
 │  │    Honeypot / canary token deception                │   │
 │  │  attest verify|keygen|inspect                       │   │
@@ -117,6 +119,7 @@ func printUsage() {
 │    kuro scan ./my-project                                  │
 │    kuro scan ./my-project --json                           │
 │    kuro fix ./my-project --dry-run                         │
+│    kuro fix ./my-project --report scan.json --auto       │
 │    kuro canary generate --type aws --format env            │
 │    kuro proxy                                               │
 │                                                            │

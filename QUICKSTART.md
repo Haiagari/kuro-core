@@ -56,6 +56,23 @@ kuro scan ./my-project --json
 
 The helper mounts only the database download directory, not project source. Scans mount that cache at `/trivy-cache` and run without network. Missing, invalid or expired DB metadata blocks the scan. The default cache is `$HOME/.kuro/trivy`; override with `KURO_TRIVY_CACHE_DIR`. Refresh before `NextUpdate` and at least every 24 hours. Copy its `db/` directory to an offline host when needed. Avoid updating it during a scan. See [scanner details](docs/SCANNER-ARCHITECTURE.md).
 
+## Fix / remediate
+
+`kuro fix` detects a bounded set of common hardcoded credential formats during a local tree walk. It can also consume the `findings` array from a `kuro scan --json` report with `--report`; report file paths must resolve to regular files inside the selected target directory. Invalid or missing report input fails closed rather than falling back to local scanning.
+
+```bash
+# Preview a local heuristic scan
+kuro fix /path/to/project --dry-run
+
+# Apply supported replacements without prompts
+kuro fix /path/to/project --auto
+
+# Consume a prior scan report
+kuro fix /path/to/project --report /path/to/scan.json --dry-run
+```
+
+Automatic replacements are limited to recognized secrets in quoted Go, Python, and JS/TS string literals. Other findings are not rewritten. Suppressions are recorded in `.kuro-suppressions.json`. Review every change; replacement does not revoke a leaked credential or erase Git history.
+
 ## Release installation (when assets are published)
 
 ```bash

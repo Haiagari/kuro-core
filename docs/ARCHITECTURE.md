@@ -52,6 +52,6 @@ Environment: `LISTEN_ADDR`, `UPSTREAM_URL`, `SCAN_MODE`, `KURO_BIN`, and Enterpr
 
 ## Additional commands
 
-`kuro fix` is a heuristic interactive text workflow, not a Bubbletea remediation UI and not guaranteed to process every scanner finding. Review diffs and separately revoke real leaked credentials. Suppression records do not automatically establish a policy exception. `kuro canary` creates synthetic HMAC-marked tokens; monitoring and external alerts require other infrastructure. `kuro attest` inspects or verifies envelopes produced elsewhere; see its [trust and format limits](ATTESTATION.md).
+`kuro fix` is a heuristic interactive text workflow, not a Bubbletea remediation UI and not guaranteed to process every scanner finding. It can also consume a `kuro scan --json` report; report paths must resolve to regular files inside the selected target, and malformed reports fail closed. Automatic replacements are limited to recognized quoted secrets in Go, Python, and JS/TS string literals. Review diffs and separately revoke real leaked credentials. Suppression records do not automatically establish a policy exception. `kuro canary` creates synthetic HMAC-marked tokens; monitoring and external alerts require other infrastructure. `kuro attest` inspects or verifies envelopes produced elsewhere; see its [trust and format limits](ATTESTATION.md).
 
 Related: [Quickstart](../QUICKSTART.md), [CLI/JSON](API.md), [tests](../tests/README.md), [synthetic demo](market-validation/DEMO.md), [interview guide](market-validation/INTERVIEW-GUIDE.md).

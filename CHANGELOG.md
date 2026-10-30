@@ -63,7 +63,7 @@ Repository: [Haiagari/kuro-core](https://github.com/Haiagari/kuro-core)
 ### Added
 - **Initial Open-Core Standalone Release**: Lightweight, zero-dependency CLI security gate and local git pre-push proxy.
 - **Multi-Scanner Parallel Fleet**: Coordinated execution of Gitleaks, Semgrep, Trivy, and Checkov in isolated Docker/Podman containers (`--network none`).
-- **Interactive Terminal Threat Remediation (`kuro fix`)**: Bubbletea TUI for interactive inspection and automated replacement of hardcoded credentials with environment variables.
+- **Terminal Threat Remediation (`kuro fix`)**: Interactive inspection and automated replacement of supported hardcoded credentials with environment variables.
 - **Cyber Deception Honeypots (`kuro canary`)**: Generation and verification of HMAC-signed canary tokens (AWS, GitHub, Slack, JWT) for intrusion detection.
 - **Fail-Closed Git Pre-Push Proxy**: Local Smart-HTTP proxy on `localhost:8000` blocking pushes containing credentials or policy violations.
 - **Cryptographic Attestation Verification (`kuro attest`)**: Built-in verification of Ed25519-signed in-toto and SLSA provenance statements stored in git notes.
