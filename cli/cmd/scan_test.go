@@ -238,3 +238,35 @@ func TestScanJSONRetainsDependencyIdentityDetail(t *testing.T) {
 		t.Fatalf("dependency identities collapsed: %s", out)
 	}
 }
+
+func TestIsLocalPath(t *testing.T) {
+	tests := []struct {
+		target string
+		want   bool
+	}{
+		{"https://github.com/Haiagari/kuro-core", false},
+		{"http://gitlab.com/test/repo", false},
+		{"git@github.com:Haiagari/kuro-core.git", false},
+		{"ssh://git@github.com/test", false},
+		{"./local-dir", true},
+		{"/var/tmp/repo", true},
+		{"~/projects/kuro", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.target, func(t *testing.T) {
+			got := isLocalPath(tc.target)
+			if got != tc.want {
+				t.Errorf("isLocalPath(%q) = %v, want %v", tc.target, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPrintPhaseResult(t *testing.T) {
+	captureStdout(t, func() {
+		PrintPhaseResult("FETCH", "running", "downloading assets")
+		PrintPhaseResult("SCOPE", "done", "2 scanners selected")
+		PrintPhaseResult("RUN", "fail", "container timeout")
+	})
+}

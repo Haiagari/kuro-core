@@ -69,7 +69,7 @@ The example stops on review as well as block/error. A team that allows review in
 
 ```bash
 kuro doctor [--json]
-kuro fix [path] [--dry-run] [--auto]
+kuro fix [path] [--dry-run|-d] [--auto|-a|-y] [--report|-r <file>]
 kuro canary generate [--type aws|github|slack|jwt|generic] [--format env|json|yaml|tf] [--output file]
 kuro canary inject <dir> [--type ...] [--format ...]
 kuro canary verify <token|file>
@@ -80,7 +80,7 @@ kuro attest keygen
 kuro proxy [--addr 127.0.0.1:8000] [--upstream https://github.com]
 ```
 
-Doctor warnings may exit 0; it is not a successful vulnerability scan. Fix is heuristic; suppression records are not automatically consumed by the gate. Canary verification identifies synthetic markers, not provider activity or an external intrusion alert. Attestation trust and exit codes: [ATTESTATION.md](ATTESTATION.md).
+Doctor warnings may exit 0; it is not a successful vulnerability scan. Fix is heuristic unless supplied a JSON scan report; report findings must identify regular files inside the selected target. Missing or invalid reports and remediation failures exit 1 rather than falling back to heuristic scanning. Automatic replacements are limited to recognized quoted secrets in Go, Python and JS/TS string literals; use `--dry-run` first. Suppression records are not automatically consumed by the gate. Canary verification identifies synthetic markers, not provider activity or an external intrusion alert. Attestation trust and exit codes: [ATTESTATION.md](ATTESTATION.md).
 
 ## Proxy
 

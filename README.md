@@ -40,7 +40,7 @@ Unlike centralized server platforms that require external infrastructure, Kuro C
 - **Pre-Push Git Proxy** — Native Smart-HTTP proxy intercepts `git push` on port `:8000`, materializes push data in temporary work directories for scanning, and rejects policy breaches before reaching upstream forges.
 - **Hardened Execution Envelope** — Scanners execute with `--network=none`, `--cap-drop=ALL`, `no-new-privileges`, and bounded CPU/memory quotas.
 - **Fresh Gate Decisions** — Source hashes provide file statistics only. Every scan runs the current applicable scanners and policy; cached approvals never bypass them.
-- **Interactive Secret Remediation** — `kuro fix` provides a heuristic interactive text workflow to inspect and replace exposed credentials with environment variables across Go, Python, and JS/TS.
+- **Interactive Secret Remediation** — `kuro fix` provides heuristic local detection or consumes findings from `kuro scan --json` with `--report`. Automatic replacements are limited to recognized quoted secrets in Go, Python, and JS/TS; review every diff.
 - **Canary Tokens & Attestation** — Generate synthetic HMAC-marked tokens (`kuro canary`) and verify an existing security-gate statement’s signature and commit binding (`kuro attest`). External monitoring and production attestation issuance are separate concerns.
 
 ---
@@ -214,7 +214,7 @@ kuro version                                         # Display version string
 
 # Security Scanning
 kuro scan <path> [--json] [--no-cache] [--history]   # Local multi-scanner gate
-kuro fix [path] [--dry-run] [--auto]                 # Interactive secret remediation
+kuro fix [path] [--dry-run] [--auto] [--report <file>] # Local or report-based remediation
 
 # Deception & Attestation
 kuro canary generate [--type aws|github|slack|jwt]   # Generate honeypot tokens
